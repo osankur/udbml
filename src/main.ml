@@ -117,6 +117,6 @@ let test_mem2() =
   ()
 
 let _ = 
-  test_mem();
+  test_resize();
   ()
   

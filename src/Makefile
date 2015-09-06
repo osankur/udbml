@@ -1,14 +1,12 @@
 INCLUDEDIR=$(shell udbm-config --inc) -I$(shell ocamlc -where)
 
-main: udbml.cmi udbml.cmxa main.ml
+main: udbml.cmxa main.ml
 	ocamlopt -I . -cclib -lstdc++ -cclib -std=c++11 -cclib -L. -cclib -L/usr/local/uppaal/lib -cclib -ludbm udbml.cmxa -o main main.ml
 udbm_stubs.o: udbm_stubs.c
 	g++ -o udbm_stubs.o -std=c++11 $(INCLUDEDIR) -fPIC -c udbm_stubs.c
 udbml.mli: udbml.ml
 	ocamlc -i $< > $@
-#udbml.cmi: udbml.mli
-#	ocamlc -c $<
-udbml.cmx: udbml.ml # udbml.cmi
+udbml.cmx: udbml.ml
 	ocamlopt -c $<
 libudbml.a dlludbml.so: udbm_stubs.o
 	ocamlmklib -v -o udbml $<
