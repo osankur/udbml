@@ -1,2 +1,3 @@
 version="0.1"
 archive(native)="udbml.cmxa"
+archive(byte)="udbml.cma"
