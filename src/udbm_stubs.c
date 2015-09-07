@@ -715,6 +715,15 @@ stub_dbm_max_dim_power(value v){
 	return Val_int(dbm_t::MAX_DIM_POWER);
 }
 
+extern "C" CAMLprim value
+stub_dbm__internal_addr(value t)
+{
+	CAMLparam1(t);
+	dbm_t * d = get_dbm_tp(t);
+	CAMLreturn(Val_long((long)d));
+}
+
+
 // The Fed interface
 extern "C" CAMLprim value
 stub_fed_create(value size)
@@ -1189,6 +1198,13 @@ stub_fed_predt(value t, value vbad, value vrestrict)
 	d->predt(*bad, restrict);
 	CAMLreturn(Val_unit);
 }
+extern "C" CAMLprim value
+stub_fed__internal_addr(value t)
+{
+	CAMLparam1(t);
+	fed_t * d = get_fed_tp(t);
+	CAMLreturn(Val_long((long)d));
+}
 
 extern "C" CAMLprim value
 stub_fed_is_included_in_predt(value t, value vgood, value vbad)
@@ -1220,8 +1236,7 @@ stub_fed_iterator_get(value t)
 	CAMLlocal1(ret);
 	fed_t::iterator * it = get_fed_it_tp(t);
 	ret = caml_alloc_custom(&custom_ops_dbm, sizeof(dbm_wrap_t), 0, 1);
-	dbm_t * dbm = it->operator->();
-	//printf("Got the dbm at %x\n", dbm); fflush(stdout);
+	dbm_t * dbm = new dbm_t(*(it->operator->()));
 	((dbm_wrap_t*)Data_custom_val(ret))->d = dbm;
 	CAMLreturn(ret);
 }

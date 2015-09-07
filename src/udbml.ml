@@ -11,8 +11,7 @@
    array (and having an abstract interface for it).
 
    3) TODO LIST
-   - ClockAccessor, pretty printing
-   - Fed iterators
+   - ClockAccessor and pretty printing
 *)
 
 module type BASIC_TYPES =
@@ -42,6 +41,8 @@ struct
     | (b,DBM_WEAK) -> Printf.sprintf "(%d,<=)" b
     | (b,DBM_STRICT) -> Printf.sprintf "(%d,<)" b
 end
+
+
 
 module Bit_vector = 
 struct
@@ -149,34 +150,16 @@ struct
   external diagonal_extrapolate_lu_bounds : bound_t array -> bound_t array -> unit = "stub_dbm_diagonal_extrapolate_lu_bounds";;
   
   external resize : t -> Bit_vector.t ->  Bit_vector.t -> int array = "stub_dbm_resize";;
+
+  external _internal_addr : t -> int = "stub_dbm__internal_addr";;
 end
 
-(**
-   Notes for Fed
-
-   1) What does isSuperSeteq does? Is it more efficient than >= ? 
-   2) Find out what approximation means. In which way are these operations approximate?
-   3) What is the difference between union (|=), add, and append? Which reduction algorithm
-   should we use? 
-   4) None of these operations are tested yet.
-*)
 
 module Fed =
 struct
   type t
   include Basic_types
       
-  module Iterator =
-  struct 
-    type t
-    external get : t -> Dbm.t = "stub_fed_iterator_get";;
-    external incr : t -> unit = "stub_fed_iterator_incr";;
-    external is_null : t -> bool = "stub_fed_iterator_is_null";;
-    external has_next : t -> bool = "stub_fed_iterator_has_next";;
-    external remove : t -> unit = "stub_fed_iterator_remove";;
-    external insert : t -> Dbm.t -> unit = "stub_fed_iterator_insert";;
-  end
-
   external create : int -> t = "stub_fed_create";;
   external copy : t -> t = "stub_fed_copy";;
   external dimension : t -> int = "stub_fed_dimension";;
@@ -185,7 +168,6 @@ struct
   external has_zero : t -> bool = "stub_fed_has_zero";;
   external hash : t -> int = "stub_fed_hash";;
   external set_init : t -> unit = "stub_fed_set_init";;
-	external begin_it : t -> Iterator.t = "stub_fed_begin_it";;
 
   external approx_equal : t -> t -> bool = "stub_fed_approx_equal";;
   external approx_notequal : t -> t -> bool = "stub_fed_approx_notequal";;
@@ -240,9 +222,35 @@ struct
 
   external predt : t -> t -> Dbm.t option -> unit = "stub_fed_predt";;
   external is_included_in_predt : t -> t -> t -> bool = "stub_fed_is_included_in_predt";;
+
+  external _internal_addr : t -> int = "stub_fed__internal_addr";;
   
   let from_dbm a = 
     let b = create (Dbm.dimension a) in
     add_dbm b a;
     b
+    
+
+  module Iterator =
+  struct 
+    type t
+    external get : t -> Dbm.t = "stub_fed_iterator_get";;
+    external incr : t -> unit = "stub_fed_iterator_incr";;
+    external is_null : t -> bool = "stub_fed_iterator_is_null";;
+    external has_next : t -> bool = "stub_fed_iterator_has_next";;
+    external remove : t -> unit = "stub_fed_iterator_remove";;
+    external insert : t -> Dbm.t -> unit = "stub_fed_iterator_insert";;
+  end 
+  
+	external begin_it : t -> Iterator.t  = "stub_fed_begin_it";;
+  let iter t f = 
+    let it = begin_it t in
+    while not(Iterator.is_null it) do
+      let dbm = Iterator.get it in
+      f dbm;
+      Iterator.incr it;
+    done
+
 end
+
+

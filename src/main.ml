@@ -67,11 +67,12 @@ let test_fed() =
 	 *)
   let c = Fed.create 3 in
   Fed.add_dbm c a;
+  Printf.printf "Dbm a: %d\nFed c: %d\n" (Dbm._internal_addr a) (Fed._internal_addr c);
 (*  Fed.add_dbm c b;
   Printf.printf "%b\n" (Fed.exact_leq (Fed.from_dbm a) c);
 	Printf.printf "Iterating and printing all dbms of the fed\n";
  *)
-	let it = Fed.begin_it c in
+  (*
 	Printf.printf "Just got the iterator\n";
 	flush stdout;
 	Gc.full_major();
@@ -79,20 +80,16 @@ let test_fed() =
 	Printf.printf "Just applied get\n";
 	flush stdout;
 	Gc.full_major();
-	(*
+     *)
+	let it = Fed.begin_it c in
 	let count = ref 0 in
 	while (not (Fed.Iterator.is_null it)) do
 		let dbm = Fed.Iterator.get it in
 		Printf.printf "Counting: %d\n" !count;
 		incr(count);
 		flush stdout;
-
-									(*
-		Printf.printf "%s\n\n" (Dbm.to_string dbm)
 		Fed.Iterator.incr it
-									 *)
 	done;
-	 *)
   ()
   
 let test_resize() = 
