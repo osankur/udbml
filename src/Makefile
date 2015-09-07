@@ -1,16 +1,19 @@
 INCLUDEDIR=$(shell udbm-config --inc) -I$(shell ocamlc -where)
 UPPAALDIR=$(shell udbm-config --dir)
-PACKAGE_FILES=libudbml.a udbml.a udbml.cmi udbml.cmxa
+PACKAGE_FILES=libudbml.a udbml.a udbml.cmi udbml.cmxa udbml.cma
 main: main.ml udbml.cmxa
 	ocamlopt -I . -cclib -lstdc++ -cclib -std=c++11 -cclib -L. -cclib -L$(UPPAALDIR)/lib -cclib -ludbm udbml.cmxa -o main main.ml
-udbml.cmxa: udbml.cmx libudbml.a
+udbml.cmxa udbml.cma: udbml.cmx udbml.cmo libudbml.a
 	ocamlmklib -v -o udbml udbml.cmx
+	ocamlmklib -v -o udbml udbml.cmo
 udbm_stubs.o: udbm_stubs.c
 	g++ -o udbm_stubs.o -std=c++11 $(INCLUDEDIR) -fPIC -c udbm_stubs.c
 udbml.mli: udbml.ml
 	ocamlc -i $< > $@
 udbml.cmx: udbml.ml
 	ocamlopt -c $<
+udbml.cmo: udbml.ml
+	ocamlc -c $<
 libudbml.a dlludbml.so: udbm_stubs.o
 	ocamlmklib -v -o udbml $<
 clean:
@@ -21,4 +24,4 @@ uninstall:
 	@ocamlfind remove udbml
 reinstall:
 	@ocamlfind remove udbml
-	@ocamlfind install udbml $(PACKAGE_FILES)
+	@ocamlfind install udbml META $(PACKAGE_FILES)
