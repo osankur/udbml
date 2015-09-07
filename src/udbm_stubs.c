@@ -1200,12 +1200,70 @@ stub_fed_is_included_in_predt(value t, value vgood, value vbad)
 	CAMLreturn(Val_bool(d->isIncludedInPredt(*good, *bad)));
 }
 extern "C" CAMLprim value
-stub_fed_begin(value t)
+stub_fed_begin_it(value t)
 {
 	CAMLparam1(t);
+	CAMLlocal1(fitw);
 	fed_t * d = get_fed_tp(t);
-	// TODO Create iterator
-	CAMLreturn(Val_unit);
+	fitw = caml_alloc_custom(&custom_ops_fed_it, sizeof(fed_it_wrap_t), 0, 1);
+	fed_t::iterator * it = new fed_t::iterator();
+	*it = d->beginMutable();
+  ((fed_it_wrap_t*)Data_custom_val(fitw))->d = it;
+	CAMLreturn(fitw);
 }
 
 // Fed.Iterator interface
+extern "C" CAMLprim value
+stub_fed_iterator_get(value t)
+{
+	CAMLparam1(t);
+	CAMLlocal1(ret);
+	fed_t::iterator * it = get_fed_it_tp(t);
+	ret = caml_alloc_custom(&custom_ops_dbm, sizeof(dbm_wrap_t), 0, 1);
+	dbm_t * dbm = it->operator->();
+	//printf("Got the dbm at %x\n", dbm); fflush(stdout);
+	((dbm_wrap_t*)Data_custom_val(ret))->d = dbm;
+	CAMLreturn(ret);
+}
+
+extern "C" CAMLprim value
+stub_fed_iterator_incr(value t)
+{
+	CAMLparam1(t);
+	fed_t::iterator * it = get_fed_it_tp(t);
+	(*it).operator++();
+	CAMLreturn(Val_unit);
+}
+
+extern "C" CAMLprim value
+stub_fed_iterator_is_null(value t)
+{
+	CAMLparam1(t);
+	fed_t::iterator * it = get_fed_it_tp(t);
+	CAMLreturn(	Val_bool((*it).null()));
+}
+
+extern "C" CAMLprim value
+stub_fed_iterator_has_next(value t)
+{
+	CAMLparam1(t);
+	fed_t::iterator * it = get_fed_it_tp(t);
+	CAMLreturn(	Val_bool((*it).hasNext()));
+}
+
+extern "C" CAMLprim value
+stub_fed_iterator_remove(value t)
+{
+	CAMLparam1(t);
+	fed_t::iterator * it = get_fed_it_tp(t);
+	(*it).remove();
+	CAMLreturn(Val_unit);
+}
+extern "C" CAMLprim value
+stub_fed_iterator_insert(value t, value dbm)
+{
+	CAMLparam2(t, dbm);
+	fed_t::iterator * it = get_fed_it_tp(t);
+	it->insert(fdbm_t::create(*get_dbm_tp(dbm), NULL));
+	CAMLreturn(Val_unit);
+}

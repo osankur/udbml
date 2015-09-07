@@ -169,14 +169,12 @@ struct
   module Iterator =
   struct 
     type t
-      (*
     external get : t -> Dbm.t = "stub_fed_iterator_get";;
     external incr : t -> unit = "stub_fed_iterator_incr";;
-    external is_null : t -> unit = "stub_fed_iterator_is_null";;
-    external has_next : t -> unit = "stub_fed_iterator_has_next";;
+    external is_null : t -> bool = "stub_fed_iterator_is_null";;
+    external has_next : t -> bool = "stub_fed_iterator_has_next";;
     external remove : t -> unit = "stub_fed_iterator_remove";;
     external insert : t -> Dbm.t -> unit = "stub_fed_iterator_insert";;
-         *)
   end
 
   external create : int -> t = "stub_fed_create";;
@@ -187,6 +185,7 @@ struct
   external has_zero : t -> bool = "stub_fed_has_zero";;
   external hash : t -> int = "stub_fed_hash";;
   external set_init : t -> unit = "stub_fed_set_init";;
+	external begin_it : t -> Iterator.t = "stub_fed_begin_it";;
 
   external approx_equal : t -> t -> bool = "stub_fed_approx_equal";;
   external approx_notequal : t -> t -> bool = "stub_fed_approx_notequal";;
