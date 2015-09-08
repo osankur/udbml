@@ -1,8 +1,8 @@
 INCLUDEDIR=$(shell udbm-config --inc) -I$(shell ocamlc -where)
-UPPAALDIR=$(shell udbm-config --dir)
+UPPAALLIB=$(shell udbm-config --libs)
 PACKAGE_FILES=libudbml.a udbml.a udbml.cmi udbml.cmxa udbml.cma
 main: main.ml udbml.cmxa
-	ocamlopt -I . -cclib -lstdc++ -cclib -std=c++11 -cclib -L. -cclib -L$(UPPAALDIR)/lib -cclib -ludbm udbml.cmxa -o main main.ml
+	ocamlopt -I . -cclib -lstdc++ -cclib -std=c++11 -cclib -L. -cclib "$(UPPAALLIB)" udbml.cmxa -o main main.ml
 udbml.cmxa udbml.cma: udbml.cmx udbml.cmo libudbml.a
 	ocamlmklib -v -o udbml udbml.cmx
 	ocamlmklib -v -o udbml udbml.cmo
