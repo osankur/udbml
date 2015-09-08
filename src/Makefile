@@ -6,8 +6,8 @@ main: main.ml udbml.cmxa
 udbml.cmxa udbml.cma: udbml.cmx udbml.cmo libudbml.a
 	ocamlmklib -v -o udbml udbml.cmx
 	ocamlmklib -v -o udbml udbml.cmo
-udbm_stubs.o: udbm_stubs.c
-	g++ -o udbm_stubs.o -std=c++11 $(INCLUDEDIR) -fPIC -c udbm_stubs.c
+udbm_stubs.o: udbm_stubs.cc
+	g++ -o udbm_stubs.o -std=c++11 $(INCLUDEDIR) -fPIC -c udbm_stubs.cc
 udbml.mli: udbml.ml
 	ocamlc -i $< > $@
 udbml.cmx: udbml.ml
