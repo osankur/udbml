@@ -11,7 +11,11 @@
    array (and having an abstract interface for it).
 
    3) TODO LIST
-   - ClockAccessor and pretty printing
+   - ClockAccessor
+   - Pretty printing
+   - Print to a channel given in argument, not only to stdout
+
+   4) When loading from or copying to a raw_t array, dbm[i,j] = array[i*dim + j]
 *)
 
 module type BASIC_TYPES =
