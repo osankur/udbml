@@ -146,8 +146,8 @@ struct
   
   external extrapolate_max_bounds : t -> bound_t array -> unit = "stub_dbm_extrapolate_max_bounds";;
   external diagonal_extrapolate_max_bounds : t -> bound_t array -> unit = "stub_dbm_diagonal_extrapolate_max_bounds";;
-  external extrapolate_lu_bounds : bound_t array -> bound_t array -> unit = "stub_dbm_extrapolate_lu_bounds";;
-  external diagonal_extrapolate_lu_bounds : bound_t array -> bound_t array -> unit = "stub_dbm_diagonal_extrapolate_lu_bounds";;
+  external extrapolate_lu_bounds : t -> bound_t array -> bound_t array -> unit = "stub_dbm_extrapolate_lu_bounds";;
+  external diagonal_extrapolate_lu_bounds : t -> bound_t array -> bound_t array -> unit = "stub_dbm_diagonal_extrapolate_lu_bounds";;
   
   external resize : t -> Bit_vector.t ->  Bit_vector.t -> int array = "stub_dbm_resize";;
 
