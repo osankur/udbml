@@ -536,20 +536,23 @@ stub_dbm_is_unbounded(value t)
 
 // CHECK
 extern "C" CAMLprim value
-stub_dbm_copy_from(value t, value ar, value vdim)
+stub_dbm_copy_from(value ar, value vdim)
 {
 	CAMLparam1(ar);
+    CAMLlocal1(dw);
 	int dim = Int_val(vdim);
-	dbm_t * d = get_dbm_tp(t);
+	dbm_t * d = new dbm_t(dim);
 	raw_t * r = new raw_t[dim*dim];
 	int b, ineq;
 	for(int i = 0; i < dim*dim; i++){
-		b = Field(Field(ar, i),0);
-		ineq = Field(Field(ar,i),1);
+		b = Int_val(Field(Field(ar, i), 0));
+		ineq = Int_val(Field(Field(ar,i),1));
 		r[i] = dbm_boundbool2raw(b,ineq==0);
 	}
 	d->copyFrom(r, dim);
-	CAMLreturn(Val_unit);
+    dw = caml_alloc_custom(&custom_ops_dbm, sizeof(dbm_wrap_t), 0, 1);
+    ((dbm_wrap_t*)Data_custom_val(dw))->d = d;
+	CAMLreturn(dw);
 }
 
 extern "C" CAMLprim value
