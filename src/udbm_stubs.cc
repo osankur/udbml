@@ -235,9 +235,7 @@ stub_dbm_copy(value dw)
 extern "C" CAMLprim value
 stub_dbm_dimension(value t)
 {
-	CAMLparam1(t);
-	dbm_wrap_t  * dw = (dbm_wrap_t*)Data_custom_val(t);
-	CAMLreturn(Val_int(dw->d->getDimension()));
+    return Val_int(get_dbm_tp(t)->getDimension());
 }
 
 extern "C" CAMLprim value
@@ -340,7 +338,6 @@ stub_dbm_at(value t, value i, value j){
 }
 extern "C" CAMLprim value
 stub_dbm_at_bound(value t, value i, value j){
-	CAMLparam3(t,i,j);
 	dbm_t * d = get_dbm_tp(t);
 	return Val_int(dbm_raw2bound((*d)(Int_val(i),Int_val(j))));
 }
@@ -447,11 +444,10 @@ stub_dbm_copy_to(value t)
 extern "C" CAMLprim value
 stub_dbm_intersect(value t, value u)
 {
-	CAMLparam2(t,u);
 	dbm_t * dt = get_dbm_tp(t);
 	dbm_t * du = get_dbm_tp(u);
 	(*dt) &= (*du);
-	CAMLreturn(Val_unit);
+	return Val_unit;
 }
 extern "C" CAMLprim value
 stub_dbm_intersects(value t, value u)
@@ -645,7 +641,6 @@ stub_dbm_diagonal_extrapolate_max_bounds(value t, value vbounds)
 extern "C" CAMLprim value
 stub_dbm_extrapolate_lu_bounds(value t, value vlbounds, value vubounds)
 {
-	CAMLparam3(t,vlbounds, vubounds);
 	dbm_t * d = get_dbm_tp(t);
 	int dim = d->getDimension();
 	int * lbounds = new int[dim];
@@ -657,7 +652,7 @@ stub_dbm_extrapolate_lu_bounds(value t, value vlbounds, value vubounds)
 	d->extrapolateLUBounds(lbounds, ubounds);
 	delete lbounds;
 	delete ubounds;
-	CAMLreturn(Val_unit);
+	return Val_unit;
 }
 
 extern "C" CAMLprim value

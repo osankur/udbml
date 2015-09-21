@@ -11,6 +11,7 @@
    array (and having an abstract interface for it).
 
    3) TODO LIST
+   - use "noalloc" when possible
    - ClockAccessor
    - Pretty printing
    - Print to a channel given in argument, not only to stdout
@@ -37,7 +38,7 @@ struct
   type raw_t = bound_t * inequality_t
   type cindex_t = int
   type clock_constraint_t = cindex_t * cindex_t * raw_t
-  external get_infty : unit -> int = "stub_get_infty"
+  external get_infty : unit -> int = "stub_get_infty" "noalloc"
   let infty = get_infty()
 
   let string_of_raw = function
@@ -68,14 +69,14 @@ module Dbm =
 struct
   type t
   include Basic_types
-  external _max_dim_power : unit -> int = "stub_dbm_max_dim_power";;
-  external _max_dim : unit -> int = "stub_dbm_max_dim";;
+  external _max_dim_power : unit -> int = "stub_dbm_max_dim_power" "noalloc";;
+  external _max_dim : unit -> int = "stub_dbm_max_dim" "noalloc";;
   
   let max_dim_power = _max_dim_power()
   let max_dim = _max_dim()
 
   external create : int -> t = "stub_dbm_create";;
-  external dimension : t -> int = "stub_dbm_dimension";;
+  external dimension : t -> int = "stub_dbm_dimension" "noalloc";;
   external copy : t -> t = "stub_dbm_copy";;
   external is_empty : t -> bool = "stub_dbm_is_empty";;
   external has_zero : t -> bool = "stub_dbm_has_zero";;
@@ -83,7 +84,7 @@ struct
   external intern : t -> unit = "stub_dbm_intern";;
 
   external at : t -> int -> int -> raw_t = "stub_dbm_at";;
-  external at_bound : t -> int -> int -> int = "stub_dbm_at_bound";;
+  external at_bound : t -> int -> int -> int = "stub_dbm_at_bound" "noalloc";;
   external equal : t -> t -> bool = "stub_dbm_equal";;
   external notequal : t -> t -> bool = "stub_dbm_notequal";;
   external lt : t -> t -> bool = "stub_dbm_lt";;
@@ -97,7 +98,7 @@ struct
   external set_zero : t -> unit = "stub_dbm_set_zero";;
   external is_zero : t -> bool = "stub_dbm_is_zero";;
   external is_init : t -> bool = "stub_dbm_is_init";;
-  external intersect : t -> t -> unit = "stub_dbm_intersect";;
+  external intersect : t -> t -> unit = "stub_dbm_intersect" "noalloc";;
   external intersects : t -> t -> bool = "stub_dbm_intersects";;
   external up : t -> unit = "stub_dbm_up";;
   external down : t -> unit = "stub_dbm_down";;
@@ -150,14 +151,13 @@ struct
   
   external extrapolate_max_bounds : t -> bound_t array -> unit = "stub_dbm_extrapolate_max_bounds";;
   external diagonal_extrapolate_max_bounds : t -> bound_t array -> unit = "stub_dbm_diagonal_extrapolate_max_bounds";;
-  external extrapolate_lu_bounds : t -> bound_t array -> bound_t array -> unit = "stub_dbm_extrapolate_lu_bounds";;
+  external extrapolate_lu_bounds : t -> bound_t array -> bound_t array -> unit = "stub_dbm_extrapolate_lu_bounds" "noalloc";;
   external diagonal_extrapolate_lu_bounds : t -> bound_t array -> bound_t array -> unit = "stub_dbm_diagonal_extrapolate_lu_bounds";;
   
   external resize : t -> Bit_vector.t ->  Bit_vector.t -> int array = "stub_dbm_resize";;
 
   external _internal_addr : t -> int = "stub_dbm__internal_addr";;
 end
-
 
 module Fed =
 struct
