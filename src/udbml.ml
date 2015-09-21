@@ -92,6 +92,9 @@ struct
   external leq : t -> t -> bool = "stub_dbm_leq";;
   external geq : t -> t -> bool = "stub_dbm_geq";;
 
+  external closure_leq : bound_t array -> bound_t array -> t -> t -> bool =
+    "stub_dbm_closure_leq" "noalloc";;
+
   external constrain : t -> clock_constraint_t -> unit = "stub_dbm_constrain";;
   external copy_to : t -> raw_t array = "stub_dbm_copy_to";;
   external set_init : t -> unit = "stub_dbm_set_init";;

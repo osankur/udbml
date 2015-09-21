@@ -608,8 +608,48 @@ stub_dbm_satisfies(value t, value ct)
 	CAMLreturn(Val_bool(d->satisfies(i,j,r)));
 }
 
+extern "C" bool
+dbm_closure_leq(const dbm_t &d1, const dbm_t &d2,
+                const std::vector<int> &lbounds, const std::vector<int> &ubounds)
+{
+    // forall x,y
+    //      Z_{x,0} < (<=, -U_x)
+    // or   Z'_{x,y} + (<, -L_y) >= Z_{x,0}
+    // or   Z'_{x,y} >= Z_{x,y}
+    int dim = d1.getDimension();
+    bool result = true;
+    for (int x = 0; result && x < dim; ++x){
+        raw_t zx0 = d1(x,0);
+        if (zx0 < dbm_boundbool2raw(-ubounds[x], false))
+            continue;
+        for (int y = 0; result && y < dim; ++y){
+            raw_t zpxy = d2(x,y);
+            if (dbm_addRawRaw(zpxy, dbm_boundbool2raw(-lbounds[y], true)) >= zx0)
+                continue;
+            if (zpxy >= d1(x,y))
+                continue;
 
+            result = false;
+        }
+    }
+    return result;
+}
 
+extern "C" CAMLprim value
+stub_dbm_closure_leq(value vlbounds, value vubounds, value t1, value t2)
+{
+    dbm_t * d1 = get_dbm_tp(t1);
+    dbm_t * d2 = get_dbm_tp(t2);
+    int dim = d1->getDimension();
+    assert(dim == d2->getDimension());
+    std::vector<int> lbounds(dim);
+    std::vector<int> ubounds(dim);
+    for (int i = 0; i < dim; ++i){
+        lbounds[i] = Int_val(Field(vlbounds,i));
+        ubounds[i] = Int_val(Field(vubounds,i));
+    }
+    return Val_bool(dbm_closure_leq(*d1, *d2, lbounds, ubounds));
+}
 
 extern "C" CAMLprim value
 stub_dbm_extrapolate_max_bounds(value t, value vbounds)
