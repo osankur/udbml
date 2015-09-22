@@ -607,22 +607,23 @@ dbm_closure_leq(const dbm_t &d1, const dbm_t &d2,
     // or   Z'_{x,y} + (<, -L_y) >= Z_{x,0}
     // or   Z'_{x,y} >= Z_{x,y}
     int dim = d1.getDimension();
-    bool result = true;
-    for (int x = 0; result && x < dim; ++x){
-        raw_t zx0 = d1(x,0);
-        if (zx0 < dbm_boundbool2raw(-ubounds[x], false))
-            continue;
-        for (int y = 0; result && y < dim; ++y){
-            raw_t zpxy = d2(x,y);
-            if (dbm_addRawRaw(zpxy, dbm_boundbool2raw(-lbounds[y], true)) >= zx0)
-                continue;
-            if (zpxy >= d1(x,y))
-                continue;
-
-            result = false;
+    const raw_t * dr1 = d1.const_dbm();
+    const raw_t * dr2 = d2.const_dbm();
+    int n = 0;
+    while (n < dim*dim-1) {
+        const raw_t & zx0 = dr1[n];
+        if (zx0 >= dbm_boundbool2raw(-ubounds[n/dim], false)) {
+            const raw_t & zpxy = dr2[n];
+            if (zpxy < dr1[n] && dbm_addRawRaw(zpxy, dbm_boundbool2raw(-lbounds[n % dim], true)) < zx0) {
+                return false;
+            } else {
+                ++n;
+            }
+        } else {
+            n = ((n/dim)+1)*dim;
         }
     }
-    return result;
+    return true;
 }
 
 extern "C" CAMLprim value
