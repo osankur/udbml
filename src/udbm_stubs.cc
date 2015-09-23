@@ -109,37 +109,37 @@ extern "C" long hash_fed_it(value v){
 }
 
 static struct custom_operations custom_ops_dbm = {
- identifier: (char*)"dbm_wrap_t handling",
-    finalize:  finalize_dbm,
-    compare:     compare_dbm,
-    hash:        hash_dbm,
-    serialize:   custom_serialize_default,
-    deserialize: custom_deserialize_default
+    .identifier     = (char*)"dbm_wrap_t handling",
+    .finalize       = finalize_dbm,
+    .compare        = compare_dbm,
+    .hash           = hash_dbm,
+    .serialize      = custom_serialize_default,
+    .deserialize    = custom_deserialize_default
 };
 static struct custom_operations custom_ops_fed = {
- identifier: (char*)"fed_wrap_t handling",
-    finalize:  finalize_fed,
-    compare:     compare_fed,
-    hash:        hash_fed,
-    serialize:   custom_serialize_default,
-    deserialize: custom_deserialize_default
+    .identifier     = (char*)"fed_wrap_t handling",
+    .finalize       = finalize_fed,
+    .compare        = compare_fed,
+    .hash           = hash_fed,
+    .serialize      = custom_serialize_default,
+    .deserialize    = custom_deserialize_default
 };
 static struct custom_operations custom_ops_fed_it = {
- identifier: (char*)"fed_it_wrap_t handling",
-    finalize:  finalize_fed_it,
-    compare:     compare_fed_it,
-    hash:        hash_fed_it,
-    serialize:   custom_serialize_default,
-    deserialize: custom_deserialize_default
+    .identifier     = (char*)"fed_it_wrap_t handling",
+    .finalize       = finalize_fed_it,
+    .compare        = compare_fed_it,
+    .hash           = hash_fed_it,
+    .serialize      = custom_serialize_default,
+    .deserialize    = custom_deserialize_default
 };
 
 static struct custom_operations custom_ops_bitvector = {
- identifier: (char*)"bitvector_wrap_t handling",
-    finalize:  finalize_bitvector,
-    compare:     compare_bitvector,
-    hash:        hash_bitvector,
-    serialize:   custom_serialize_default,
-    deserialize: custom_deserialize_default
+    .identifier     = (char*)"bitvector_wrap_t handling",
+    .finalize       = finalize_bitvector,
+    .compare        = compare_bitvector,
+    .hash           = hash_bitvector,
+    .serialize      = custom_serialize_default,
+    .deserialize    = custom_deserialize_default
 };
 
 
@@ -230,12 +230,12 @@ extern "C" long hash_carray(value v){
 }
 
 static struct custom_operations custom_ops_carray = {
-identifier: (char*)"carray handling",
-finalize: finalize_carray,
-compare: compare_carray,
-hash: hash_carray,
-serialize: custom_serialize_default,
-deserialize: custom_deserialize_default,
+    .identifier     = (char*)"carray handling",
+    .finalize       = finalize_carray,
+    .compare        = compare_carray,
+    .hash           = hash_carray,
+    .serialize      = custom_serialize_default,
+    .deserialize    = custom_deserialize_default,
 };
 
 extern "C" CAMLprim value
