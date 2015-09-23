@@ -319,10 +319,8 @@ stub_dbm_hash(value t)
 extern "C" CAMLprim value
 stub_dbm_set_init(value t)
 {
-	CAMLparam1(t);
-	dbm_t * d = get_dbm_ptr(t);
-	d->setInit();
-	CAMLreturn(Val_unit);
+    get_dbm_ptr(t)->setInit();
+	return Val_unit;
 }
 
 extern "C"

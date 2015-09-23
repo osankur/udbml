@@ -158,7 +158,7 @@ struct
 
   external constrain : t -> clock_constraint_t -> unit = "stub_dbm_constrain";;
   external copy_to : t -> raw_t array = "stub_dbm_copy_to";;
-  external set_init : t -> unit = "stub_dbm_set_init";;
+  external set_init : t -> unit = "stub_dbm_set_init" "noalloc";;
   external set_zero : t -> unit = "stub_dbm_set_zero";;
   external is_zero : t -> bool = "stub_dbm_is_zero";;
   external is_init : t -> bool = "stub_dbm_is_init";;
