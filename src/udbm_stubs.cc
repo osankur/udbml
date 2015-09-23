@@ -12,6 +12,7 @@ extern "C" {
 #include <base/bitstring.h>
 #include <iostream>
 #include <sstream>
+#include <vector>
 
 #define get_dbm_ptr(x) ((dbm_wrap_t*)Data_custom_val(x))
 #define get_fed_tp(x) ((fed_t*)((fed_wrap_t*)Data_custom_val(x))->d)
@@ -200,6 +201,58 @@ stub_bitvector_count(value bw)
 	BitString * b = get_bitvector_tp(bw);
 	CAMLreturn(Val_int(b->count()));
 }
+
+/// The C array interface
+#define get_cvector(x) ((carray_t*)Data_custom_val(x))
+
+typedef std::vector<int> carray_t;
+
+extern "C" void finalize_carray(value v) {
+    ((carray_t*)Data_custom_val(v))->~vector<int>();
+}
+extern "C" int compare_carray(value v1, value v2) {
+    const std::vector<int> &vec1 = *get_cvector(v1);
+    const std::vector<int> &vec2 = *get_cvector(v2);
+    if (v1 < v2)
+        return -1;
+    else if (v1 > v2)
+        return 1;
+    return 0;
+}
+extern "C" long hash_carray(value v){
+    const std::vector<int> &vv = *get_cvector(v);
+    long res = 0;
+    for (std::vector<int>::const_iterator it = vv.begin();
+         it != vv.end(); ++it) {
+        res ^= (*it) + 0x9e3779b9 + (res << 6) + (res >> 2);
+    }
+    return res;
+}
+
+static struct custom_operations custom_ops_carray = {
+identifier: (char*)"carray handling",
+finalize: finalize_carray,
+compare: compare_carray,
+hash: hash_carray,
+serialize: custom_serialize_default,
+deserialize: custom_deserialize_default,
+};
+
+extern "C" CAMLprim value
+stub_carray_to_c(value v, value size)
+{
+    CAMLparam2(v, size);
+    CAMLlocal1(res);
+    int dim = Int_val(size);
+    res = caml_alloc_custom(&custom_ops_carray, sizeof(carray_t), 0, 1);
+    new (Data_custom_val(res)) carray_t(dim);
+    std::vector<int> & d = *get_cvector(res);
+    for (int i = 0; i < dim; ++i) {
+        d[i] = Int_val(Field(v,i));
+    }
+    CAMLreturn(res);
+}
+
 
 
 
@@ -633,13 +686,7 @@ stub_dbm_closure_leq(value vlbounds, value vubounds, value t1, value t2)
     const dbm_t & d2 = *get_dbm_ptr(t2);
     int dim = d1.getDimension();
     assert(dim == d2.getDimension());
-    std::vector<int> lbounds(dim);
-    std::vector<int> ubounds(dim);
-    for (int i = 0; i < dim; ++i){
-        lbounds[i] = Int_val(Field(vlbounds,i));
-        ubounds[i] = Int_val(Field(vubounds,i));
-    }
-    return Val_bool(dbm_closure_leq(d1, d2, lbounds, ubounds));
+    return Val_bool(dbm_closure_leq(d1, d2, *get_cvector(vlbounds), *get_cvector(vubounds)));
 }
 
 extern "C" CAMLprim value
@@ -647,12 +694,8 @@ stub_dbm_extrapolate_max_bounds(value t, value vbounds)
 {
 	CAMLparam2(t,vbounds);
 	dbm_t * d = get_dbm_ptr(t);
-	int dim = d->getDimension();
-	int * bounds = new int[dim];
-	for (int i = 0; i < dim; i++)
-		bounds[i] = Int_val(Field(vbounds,i));
+	int * bounds = get_cvector(vbounds)->data();
 	d->extrapolateMaxBounds(bounds);
-	delete bounds;
 	CAMLreturn(Val_unit);
 }
 extern "C" CAMLprim value
@@ -660,12 +703,8 @@ stub_dbm_diagonal_extrapolate_max_bounds(value t, value vbounds)
 {
 	CAMLparam2(t,vbounds);
 	dbm_t * d = get_dbm_ptr(t);
-	int dim = d->getDimension();
-	int * bounds = new int[dim];
-	for (int i = 0; i < dim; i++)
-		bounds[i] = Int_val(Field(vbounds,i));
+    int * bounds = get_cvector(vbounds)->data();
 	d->diagonalExtrapolateMaxBounds(bounds);
-	delete bounds;
 	CAMLreturn(Val_unit);
 }
 
@@ -673,16 +712,9 @@ extern "C" CAMLprim value
 stub_dbm_extrapolate_lu_bounds(value t, value vlbounds, value vubounds)
 {
 	dbm_t * d = get_dbm_ptr(t);
-	int dim = d->getDimension();
-	int * lbounds = new int[dim];
-	int * ubounds = new int[dim];
-	for (int i = 0; i < dim; i++){
-		lbounds[i] = Int_val(Field(vlbounds,i));
-		ubounds[i] = Int_val(Field(vubounds,i));
-	}
+	int * lbounds = get_cvector(vlbounds)->data();
+	int * ubounds = get_cvector(vubounds)->data();
 	d->extrapolateLUBounds(lbounds, ubounds);
-	delete lbounds;
-	delete ubounds;
 	return Val_unit;
 }
 
@@ -691,16 +723,9 @@ stub_dbm_diagonal_extrapolate_lu_bounds(value t, value vlbounds, value vubounds)
 {
 	CAMLparam3(t,vlbounds, vubounds);
 	dbm_t * d = get_dbm_ptr(t);
-	int dim = d->getDimension();
-	int * lbounds = new int[dim];
-	int * ubounds = new int[dim];
-	for (int i = 0; i < dim; i++){
-		lbounds[i] = Int_val(Field(vlbounds,i));
-		ubounds[i] = Int_val(Field(vubounds,i));
-	}
+    int * lbounds = get_cvector(vlbounds)->data();
+    int * ubounds = get_cvector(vubounds)->data();
 	d->diagonalExtrapolateLUBounds(lbounds, ubounds);
-	delete lbounds;
-	delete ubounds;
 	CAMLreturn(Val_unit);
 }
 

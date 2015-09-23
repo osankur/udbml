@@ -6,17 +6,13 @@
    Similarly all unsigned integers are int in this module. 
    This is not a problem for the cindex_t type and neither should it be for hash values.
 
-   2) The extrapolation functions reallocates the given arrays at each call to convert it
-   from Caml types to C. This can be avoided by doing it once and keeping the table as a C
-   array (and having an abstract interface for it).
-
+   2) When loading from or copying to a raw_t array, dbm[i,j] = array[i*dim + j]
+   
    3) TODO LIST
    - use "noalloc" when possible
    - ClockAccessor
    - Pretty printing
    - Print to a channel given in argument, not only to stdout
-
-   4) When loading from or copying to a raw_t array, dbm[i,j] = array[i*dim + j]
 *)
 
 module type BASIC_TYPES =
@@ -65,6 +61,13 @@ struct
   (* TODO Fill in *)
 end
 
+module Carray =
+struct
+  type t
+
+  external to_c : int array -> int -> t = "stub_carray_to_c";;
+end
+
 module Dbm = 
 struct
   type t
@@ -92,7 +95,7 @@ struct
   external leq : t -> t -> bool = "stub_dbm_leq";;
   external geq : t -> t -> bool = "stub_dbm_geq";;
 
-  external closure_leq : bound_t array -> bound_t array -> t -> t -> bool =
+  external closure_leq : Carray.t -> Carray.t -> t -> t -> bool =
     "stub_dbm_closure_leq" "noalloc";;
 
   external constrain : t -> clock_constraint_t -> unit = "stub_dbm_constrain";;
@@ -152,10 +155,10 @@ struct
   external is_subtraction_empty : t -> t -> bool = "stub_dbm_is_subtraction_empty";;
 
   
-  external extrapolate_max_bounds : t -> bound_t array -> unit = "stub_dbm_extrapolate_max_bounds";;
-  external diagonal_extrapolate_max_bounds : t -> bound_t array -> unit = "stub_dbm_diagonal_extrapolate_max_bounds";;
-  external extrapolate_lu_bounds : t -> bound_t array -> bound_t array -> unit = "stub_dbm_extrapolate_lu_bounds" "noalloc";;
-  external diagonal_extrapolate_lu_bounds : t -> bound_t array -> bound_t array -> unit = "stub_dbm_diagonal_extrapolate_lu_bounds";;
+  external extrapolate_max_bounds : t -> Carray.t -> unit = "stub_dbm_extrapolate_max_bounds";;
+  external diagonal_extrapolate_max_bounds : t -> Carray.t -> unit = "stub_dbm_diagonal_extrapolate_max_bounds";;
+  external extrapolate_lu_bounds : t -> Carray.t -> Carray.t -> unit = "stub_dbm_extrapolate_lu_bounds" "noalloc";;
+  external diagonal_extrapolate_lu_bounds : t -> Carray.t -> Carray.t -> unit = "stub_dbm_diagonal_extrapolate_lu_bounds";;
   
   external resize : t -> Bit_vector.t ->  Bit_vector.t -> int array = "stub_dbm_resize";;
 
