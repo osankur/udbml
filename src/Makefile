@@ -13,7 +13,7 @@ BUILDDIR=_build
 OCAMLBUILD=ocamlbuild -use-ocamlfind -classic-display -build-dir $(BUILDDIR)
 
 all:
-	$(OCAMLBUILD) -cflags "-cc g++ $(INCLUDEDIR)" udbm_stubs.o
+	$(OCAMLBUILD) -cflags "-cc g++ $(INCLUDEDIR) -ccopt -fPIC" udbm_stubs.o
 	$(OCAMLBUILD) udbml.cmx
 	ocamlmklib -o $(BUILDDIR)/udbml $(BUILDDIR)/udbml.cmx $(BUILDDIR)/udbm_stubs.o $(UPPAALLIB) -lstdc++
 
