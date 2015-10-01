@@ -24,5 +24,5 @@ uninstall:
 clean:
 	ocamlbuild -clean
 reinstall:
-	@ocamlfind remove udbml
-	@ocamlfind install udbml META $(PACKAGE_FILES)
+	@$(MAKE) uninstall
+	@$(MAKE) install
