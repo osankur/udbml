@@ -10,7 +10,7 @@ INSTALL_FILES=$(foreach i,$(PACKAGE_FILES),$(BUILDDIR)/$i)
 
 BUILDDIR=_build
 
-OCAMLBUILD=ocamlbuild -use-ocamlfind -classic-display -build-dir $(BUILDDIR) -X ocamlbuildtest
+OCAMLBUILD=ocamlbuild -use-ocamlfind -classic-display -build-dir $(BUILDDIR)
 
 all:
 	$(OCAMLBUILD) -cflags "-cc g++ $(INCLUDEDIR)" udbm_stubs.o
