@@ -1,27 +1,28 @@
-INCLUDEDIR=$(shell udbm-config --inc) -I$(shell ocamlc -where)
+UPPAAL_INCLUDEDIR=$(shell udbm-config --inc)
+OCAML_INCLUDEDIR=-I$(shell ocamlc -where)
+
+INCLUDEDIR=$(foreach i,$(UPPAAL_INCLUDEDIR) $(OCAML_INCLUDEDIR),-ccopt $i)
+
 UPPAALLIB=$(shell udbm-config --libs)
-PACKAGE_FILES=libudbml.a udbml.a udbml.cmi udbml.cmxa udbml.cma
-main: main.ml udbml.cmxa
-	ocamlopt -I . -cclib -lstdc++ -cclib -L. -cclib "$(UPPAALLIB)" udbml.cmxa -o main main.ml
-udbml.cmxa udbml.cma: udbml.cmx udbml.cmo libudbml.a
-	ocamlmklib -v -o udbml udbml.cmx
-	ocamlmklib -v -o udbml udbml.cmo
-udbm_stubs.o: udbm_stubs.cc
-	g++ -o udbm_stubs.o $(INCLUDEDIR) -fPIC -c udbm_stubs.cc
-udbml.mli: udbml.ml
-	ocamlc -i $< > $@
-udbml.cmx: udbml.ml
-	ocamlopt -c $<
-udbml.cmo: udbml.ml
-	ocamlc -c $<
-libudbml.a dlludbml.so: udbm_stubs.o
-	ocamlmklib -v -o udbml $<
-clean:
-	rm -f *.[oa] *.so *.cm[ixoa] *.cmxa
+
+PACKAGE_FILES=libudbml.a udbml.a udbml.cmi udbml.cmxa
+INSTALL_FILES=$(foreach i,$(PACKAGE_FILES),$(BUILDDIR)/$i)
+
+BUILDDIR=_build
+
+OCAMLBUILD=ocamlbuild -use-ocamlfind -classic-display -build-dir $(BUILDDIR) -X ocamlbuildtest
+
+all:
+	$(OCAMLBUILD) -cflags "-cc g++ $(INCLUDEDIR)" udbm_stubs.o
+	$(OCAMLBUILD) udbml.cmx
+	ocamlmklib -o $(BUILDDIR)/udbml $(BUILDDIR)/udbml.cmx $(BUILDDIR)/udbm_stubs.o $(UPPAALLIB) -lstdc++
+
 install:
-	@ocamlfind install udbml META $(PACKAGE_FILES)
+	ocamlfind install udbml META $(INSTALL_FILES)
 uninstall:
-	@ocamlfind remove udbml
+	ocamlfind remove udbml
+clean:
+	ocamlbuild -clean
 reinstall:
 	@ocamlfind remove udbml
 	@ocamlfind install udbml META $(PACKAGE_FILES)
