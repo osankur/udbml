@@ -15,7 +15,7 @@ OCAMLBUILD=ocamlbuild -use-ocamlfind -classic-display -build-dir $(BUILDDIR)
 all:
 	$(OCAMLBUILD) -cflags "-cc g++ $(INCLUDEDIR) -ccopt -fPIC" udbm_stubs.o
 	$(OCAMLBUILD) udbml.cmx
-	ocamlmklib -o $(BUILDDIR)/udbml $(BUILDDIR)/udbml.cmx $(BUILDDIR)/udbm_stubs.o $(UPPAALLIB) -lstdc++
+	ocamlmklib -custom -o $(BUILDDIR)/udbml $(BUILDDIR)/udbml.cmx $(BUILDDIR)/udbm_stubs.o $(UPPAALLIB) -lstdc++
 
 install:
 	ocamlfind install udbml META $(INSTALL_FILES)
