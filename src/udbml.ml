@@ -222,6 +222,7 @@ struct
   external down : t -> unit = "stub_fed_down";;
   external free_clock : t -> cindex_t -> unit = "stub_fed_free_clock";;
   external constrain : t -> clock_constraint_t -> unit = "stub_fed_constrain";;
+  external update_value : t -> cindex_t -> bound_t -> unit = "stub_fed_update_value";;
   external reduce : t -> unit = "stub_fed_reduce";;
   external expensive_reduce : t -> unit = "stub_fed_expensive_reduce";;
   external merge_reduce : t -> int -> int -> unit = "stub_fed_merge_reduce";;

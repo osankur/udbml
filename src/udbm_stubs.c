@@ -1194,6 +1194,20 @@ stub_fed_constrain(value t, value ct)
 }
 
 extern "C" CAMLprim value
+stub_fed_update_value(value t, value ct, value bt)
+{
+    CAMLparam3(t, ct, bt);
+    fed_t * fed = get_fed_tp(t);
+    int clock = Int_val(ct);
+    int bound = Int_val(bt);
+    for (fed_t::iterator it = fed->beginMutable(); !it.null(); ++it)
+    {
+        it->updateValue(clock, bound);
+    }
+    CAMLreturn(Val_unit);
+}
+
+extern "C" CAMLprim value
 stub_fed_reduce(value t)
 {
 	CAMLparam1(t);
