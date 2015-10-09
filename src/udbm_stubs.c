@@ -14,7 +14,7 @@ extern "C" {
 #include <sstream>
 #include <vector>
 
-#define get_dbm_ptr(x) ((dbm_wrap_t*)Data_custom_val(x))
+#define get_dbm_ptr(x) static_cast<dbm_wrap_t*>(Data_custom_val(x))
 #define get_fed_tp(x) ((fed_t*)((fed_wrap_t*)Data_custom_val(x))->d)
 #define get_fed_it_tp(x) ((fed_t::iterator*)((fed_it_wrap_t*)Data_custom_val(x))->d)
 #define get_bitvector_tp(x) ((BitString*)((bitvector_wrap_t*)Data_custom_val(x))->b)
@@ -1297,6 +1297,7 @@ stub_fed_begin_it(value t)
 }
 
 // Fed.Iterator interface
+// TODO seems to be bugged
 extern "C" CAMLprim value
 stub_fed_iterator_get(value t)
 {
