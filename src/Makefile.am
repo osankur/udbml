@@ -5,7 +5,7 @@ UDBML_INCLUDES=$(foreach i,$(UPPAAL_INCLUDES) $(OCAML_INCLUDEDIR),-ccopt $i)
 
 UPPAALLIB=@UPPAAL_LIBDIR@
 
-MODULES=udbml_unpriced udbml
+MODULES=udbml_unpriced udbml_priced udbml
 MODULES_FILES=$(MODULES:=.cmi) $(MODULES:=.cmx)
 PACKAGE_FILES=libudbml.a udbml.a udbml.cmxa $(MODULES_FILES)
 
@@ -22,8 +22,10 @@ OCAML_CXX_FLAGS=$(foreach i,$(CXX_FLAGS),-ccopt $i)
 
 all-local:
 	$(OCAMLBUILD) -cflags "-cc g++ $(UDBML_INCLUDES) $(OCAML_CXX_FLAGS)" udbm_stubs.o
+	$(OCAMLBUILD) -cflags "-cc g++ $(UDBML_INCLUDES) $(OCAML_CXX_FLAGS)" updbm_stubs.o
 	$(OCAMLBUILD) udbml_unpriced.cmx
-	ocamlmklib -custom -o $(BUILDDIR)/udbml $(BUILDDIR)/udbml.cmx $(BUILDDIR)/udbml_unpriced.cmx $(BUILDDIR)/udbm_stubs.o $(UPPAALLIB) -lstdc++
+	$(OCAMLBUILD) udbml_priced.cmx
+	ocamlmklib -custom -o $(BUILDDIR)/udbml $(BUILDDIR)/udbml.cmx $(BUILDDIR)/udbml_unpriced.cmx $(BUILDDIR)/udbm_stubs.o $(BUILDDIR)/udbml_priced.cmx $(BUILDDIR)/updbm_stubs.o $(UPPAALLIB) -lstdc++
 
 install-data-local:
 	ocamlfind install -destdir $(UDBML_PREFIX) udbml META $(INSTALL_FILES)
