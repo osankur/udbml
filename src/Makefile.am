@@ -14,8 +14,11 @@ OCAMLBUILD=ocamlbuild -use-ocamlfind -classic-display -build-dir $(BUILDDIR)
 
 UDBML_PREFIX=${prefix}
 
+CXX_FLAGS=-fPIC -O3 -DNDEBUG
+OCAML_CXX_FLAGS=$(foreach i,$(CXX_FLAGS),-ccopt $i)
+
 all-local:
-	$(OCAMLBUILD) -cflags "-cc g++ $(UDBML_INCLUDES) -ccopt -fPIC" udbm_stubs.o
+	$(OCAMLBUILD) -cflags "-cc g++ $(UDBML_INCLUDES) $(OCAML_CXX_FLAGS)" udbm_stubs.o
 	$(OCAMLBUILD) udbml.cmx
 	ocamlmklib -custom -o $(BUILDDIR)/udbml $(BUILDDIR)/udbml.cmx $(BUILDDIR)/udbm_stubs.o $(UPPAALLIB) -lstdc++
 
