@@ -14,7 +14,8 @@ extern "C" {
 #include <sstream>
 #include <vector>
 
-#define get_dbm_ptr(x) static_cast<dbm_wrap_t*>(Data_custom_val(x))
+#include "udbm_stubs.h"
+
 #define get_fed_ptr(x) static_cast<fed_wrap_t*>(Data_custom_val(x))
 #define get_fed_it_tp(x) ((fed_t::iterator*)((fed_it_wrap_t*)Data_custom_val(x))->d)
 #define get_bitvector_tp(x) ((BitString*)((bitvector_wrap_t*)Data_custom_val(x))->b)
@@ -199,9 +200,6 @@ stub_bitvector_count(value bw)
 }
 
 /// The C array interface
-#define get_cvector(x) ((carray_t*)Data_custom_val(x))
-
-typedef std::vector<int> carray_t;
 
 extern "C" void finalize_carray(value v) {
     ((carray_t*)Data_custom_val(v))->~vector<int>();
