@@ -34,6 +34,8 @@ struct
 
   external is_unbounded : t -> bool = "stub_pdbm_is_unbounded" "noalloc";;
 
+  external infimum : t -> int = "stub_pdbm_infimum" "noalloc";;
+
   external to_string : t -> string = "stub_pdbm_to_string";;
 end
 

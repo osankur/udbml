@@ -280,6 +280,13 @@ stub_pdbm_intersect(value v1, value v2)
 }
 
 extern "C" CAMLprim value
+stub_pdbm_infimum(value v)
+{
+    pdbm_t * d = get_pdbm_ptr(v);
+    return Val_int(pdbm_getInfimum(*d, d->getDimension()));
+}
+
+extern "C" CAMLprim value
 stub_pdbm_to_string(value v)
 {
     CAMLparam1(v);
