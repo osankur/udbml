@@ -310,6 +310,30 @@ stub_pfed_add_dbm(value v, value d)
     return Val_unit;
 }
 
+// returns true iff d is non-empty afterwards
+bool
+pdbm_intersect_dbm(pdbm_t & d, const dbm_t & dbm)
+{
+    cindex_t dim = d.getDimension();
+    pdbm_t old_d = d;
+    raw_t * rdbm = pdbm_getMutableMatrix(d, dim);
+    // TODO d1 and d2 should be non-empty
+    // dbm_intersection returns true iff d1 is non-empty afterwards
+    bool res = dbm_intersection(rdbm, dbm.const_dbm(), dim);
+    if (!res) return false;
+
+    // otherwise
+    // TODO should the pdbm be closed?
+    // pdbm_close(d, dim);
+    int32_t * offset = new int32_t[dim];
+    offset[0] = 0;
+    pdbm_getOffset(d, dim, offset);
+    int32_t cost = pdbm_getCostOfValuation(old_d, dim, offset);
+    pdbm_setCostAtOffset(d, dim, cost);
+    delete[] offset;
+    return true;
+}
+
 extern "C" CAMLprim value
 stub_pfed_intersect_dbm(value v, value d)
 {
@@ -317,12 +341,11 @@ stub_pfed_intersect_dbm(value v, value d)
     const dbm_t & dbm = *get_dbm_ptr(d);
     for (pfed_t::iterator it = fed.beginMutable(); it != fed.endMutable(); ++it)
     {
-        pdbm_t & d = *it;
-        raw_t * rdbm = pdbm_getMutableMatrix(d, d.getDimension());
-        // TODO d1 and d2 should be non-empty
-        // dbm_intersection returns true iff d1 is non-empty afterwards
-        dbm_intersection(rdbm, dbm.const_dbm(), d.getDimension());
-        pdbm_close(d, d.getDimension());
+        bool not_empty = pdbm_intersect_dbm(*it, dbm);
+        if (!not_empty)
+        {
+            it = fed.erase(it);
+        }
     }
     return Val_unit;
 }
