@@ -338,7 +338,7 @@ extern "C" CAMLprim value
 stub_pfed_up(value v)
 {
     CAMLparam1(v);
-    get_pfed_ptr(v)->up();
+    get_pfed_ptr(v)->up(1);
     CAMLreturn(Val_unit);
 }
 
