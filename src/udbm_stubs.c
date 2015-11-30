@@ -12,8 +12,9 @@ extern "C" {
 #include <base/bitstring.h>
 #include <iostream>
 #include <sstream>
+#include <vector>
 
-#define get_dbm_ptr(x) ((dbm_wrap_t*)Data_custom_val(x))
+#define get_dbm_ptr(x) static_cast<dbm_wrap_t*>(Data_custom_val(x))
 #define get_fed_tp(x) ((fed_t*)((fed_wrap_t*)Data_custom_val(x))->d)
 #define get_fed_it_tp(x) ((fed_t::iterator*)((fed_it_wrap_t*)Data_custom_val(x))->d)
 #define get_bitvector_tp(x) ((BitString*)((bitvector_wrap_t*)Data_custom_val(x))->b)
@@ -108,37 +109,37 @@ extern "C" long hash_fed_it(value v){
 }
 
 static struct custom_operations custom_ops_dbm = {
- identifier: (char*)"dbm_wrap_t handling",
-    finalize:  finalize_dbm,
-    compare:     compare_dbm,
-    hash:        hash_dbm,
-    serialize:   custom_serialize_default,
-    deserialize: custom_deserialize_default
+    .identifier     = (char*)"dbm_wrap_t handling",
+    .finalize       = finalize_dbm,
+    .compare        = compare_dbm,
+    .hash           = hash_dbm,
+    .serialize      = custom_serialize_default,
+    .deserialize    = custom_deserialize_default
 };
 static struct custom_operations custom_ops_fed = {
- identifier: (char*)"fed_wrap_t handling",
-    finalize:  finalize_fed,
-    compare:     compare_fed,
-    hash:        hash_fed,
-    serialize:   custom_serialize_default,
-    deserialize: custom_deserialize_default
+    .identifier     = (char*)"fed_wrap_t handling",
+    .finalize       = finalize_fed,
+    .compare        = compare_fed,
+    .hash           = hash_fed,
+    .serialize      = custom_serialize_default,
+    .deserialize    = custom_deserialize_default
 };
 static struct custom_operations custom_ops_fed_it = {
- identifier: (char*)"fed_it_wrap_t handling",
-    finalize:  finalize_fed_it,
-    compare:     compare_fed_it,
-    hash:        hash_fed_it,
-    serialize:   custom_serialize_default,
-    deserialize: custom_deserialize_default
+    .identifier     = (char*)"fed_it_wrap_t handling",
+    .finalize       = finalize_fed_it,
+    .compare        = compare_fed_it,
+    .hash           = hash_fed_it,
+    .serialize      = custom_serialize_default,
+    .deserialize    = custom_deserialize_default
 };
 
 static struct custom_operations custom_ops_bitvector = {
- identifier: (char*)"bitvector_wrap_t handling",
-    finalize:  finalize_bitvector,
-    compare:     compare_bitvector,
-    hash:        hash_bitvector,
-    serialize:   custom_serialize_default,
-    deserialize: custom_deserialize_default
+    .identifier     = (char*)"bitvector_wrap_t handling",
+    .finalize       = finalize_bitvector,
+    .compare        = compare_bitvector,
+    .hash           = hash_bitvector,
+    .serialize      = custom_serialize_default,
+    .deserialize    = custom_deserialize_default
 };
 
 
@@ -200,6 +201,58 @@ stub_bitvector_count(value bw)
 	BitString * b = get_bitvector_tp(bw);
 	CAMLreturn(Val_int(b->count()));
 }
+
+/// The C array interface
+#define get_cvector(x) ((carray_t*)Data_custom_val(x))
+
+typedef std::vector<int> carray_t;
+
+extern "C" void finalize_carray(value v) {
+    ((carray_t*)Data_custom_val(v))->~vector<int>();
+}
+extern "C" int compare_carray(value v1, value v2) {
+    const std::vector<int> &vec1 = *get_cvector(v1);
+    const std::vector<int> &vec2 = *get_cvector(v2);
+    if (v1 < v2)
+        return -1;
+    else if (v1 > v2)
+        return 1;
+    return 0;
+}
+extern "C" long hash_carray(value v){
+    const std::vector<int> &vv = *get_cvector(v);
+    long res = 0;
+    for (std::vector<int>::const_iterator it = vv.begin();
+         it != vv.end(); ++it) {
+        res ^= (*it) + 0x9e3779b9 + (res << 6) + (res >> 2);
+    }
+    return res;
+}
+
+static struct custom_operations custom_ops_carray = {
+    .identifier     = (char*)"carray handling",
+    .finalize       = finalize_carray,
+    .compare        = compare_carray,
+    .hash           = hash_carray,
+    .serialize      = custom_serialize_default,
+    .deserialize    = custom_deserialize_default,
+};
+
+extern "C" CAMLprim value
+stub_carray_to_c(value v, value size)
+{
+    CAMLparam2(v, size);
+    CAMLlocal1(res);
+    int dim = Int_val(size);
+    res = caml_alloc_custom(&custom_ops_carray, sizeof(carray_t), 0, 1);
+    new (Data_custom_val(res)) carray_t(dim);
+    std::vector<int> & d = *get_cvector(res);
+    for (int i = 0; i < dim; ++i) {
+        d[i] = Int_val(Field(v,i));
+    }
+    CAMLreturn(res);
+}
+
 
 
 
@@ -607,22 +660,23 @@ dbm_closure_leq(const dbm_t &d1, const dbm_t &d2,
     // or   Z'_{x,y} + (<, -L_y) >= Z_{x,0}
     // or   Z'_{x,y} >= Z_{x,y}
     int dim = d1.getDimension();
-    bool result = true;
-    for (int x = 0; result && x < dim; ++x){
-        raw_t zx0 = d1(x,0);
-        if (zx0 < dbm_boundbool2raw(-ubounds[x], false))
-            continue;
-        for (int y = 0; result && y < dim; ++y){
-            raw_t zpxy = d2(x,y);
-            if (dbm_addRawRaw(zpxy, dbm_boundbool2raw(-lbounds[y], true)) >= zx0)
-                continue;
-            if (zpxy >= d1(x,y))
-                continue;
-
-            result = false;
+    const raw_t * dr1 = d1.const_dbm();
+    const raw_t * dr2 = d2.const_dbm();
+    int n = 0;
+    while (n < dim*dim-1) {
+        const raw_t & zx0 = dr1[n];
+        if (zx0 >= dbm_boundbool2raw(-ubounds[n/dim], false)) {
+            const raw_t & zpxy = dr2[n];
+            if (zpxy < dr1[n] && dbm_addRawRaw(zpxy, dbm_boundbool2raw(-lbounds[n % dim], true)) < zx0) {
+                return false;
+            } else {
+                ++n;
+            }
+        } else {
+            n = ((n/dim)+1)*dim;
         }
     }
-    return result;
+    return true;
 }
 
 extern "C" CAMLprim value
@@ -632,13 +686,7 @@ stub_dbm_closure_leq(value vlbounds, value vubounds, value t1, value t2)
     const dbm_t & d2 = *get_dbm_ptr(t2);
     int dim = d1.getDimension();
     assert(dim == d2.getDimension());
-    std::vector<int> lbounds(dim);
-    std::vector<int> ubounds(dim);
-    for (int i = 0; i < dim; ++i){
-        lbounds[i] = Int_val(Field(vlbounds,i));
-        ubounds[i] = Int_val(Field(vubounds,i));
-    }
-    return Val_bool(dbm_closure_leq(d1, d2, lbounds, ubounds));
+    return Val_bool(dbm_closure_leq(d1, d2, *get_cvector(vlbounds), *get_cvector(vubounds)));
 }
 
 extern "C" CAMLprim value
@@ -646,12 +694,8 @@ stub_dbm_extrapolate_max_bounds(value t, value vbounds)
 {
 	CAMLparam2(t,vbounds);
 	dbm_t * d = get_dbm_ptr(t);
-	int dim = d->getDimension();
-	int * bounds = new int[dim];
-	for (int i = 0; i < dim; i++)
-		bounds[i] = Int_val(Field(vbounds,i));
+	int * bounds = get_cvector(vbounds)->data();
 	d->extrapolateMaxBounds(bounds);
-	delete bounds;
 	CAMLreturn(Val_unit);
 }
 extern "C" CAMLprim value
@@ -659,12 +703,8 @@ stub_dbm_diagonal_extrapolate_max_bounds(value t, value vbounds)
 {
 	CAMLparam2(t,vbounds);
 	dbm_t * d = get_dbm_ptr(t);
-	int dim = d->getDimension();
-	int * bounds = new int[dim];
-	for (int i = 0; i < dim; i++)
-		bounds[i] = Int_val(Field(vbounds,i));
+    int * bounds = get_cvector(vbounds)->data();
 	d->diagonalExtrapolateMaxBounds(bounds);
-	delete bounds;
 	CAMLreturn(Val_unit);
 }
 
@@ -672,16 +712,9 @@ extern "C" CAMLprim value
 stub_dbm_extrapolate_lu_bounds(value t, value vlbounds, value vubounds)
 {
 	dbm_t * d = get_dbm_ptr(t);
-	int dim = d->getDimension();
-	int * lbounds = new int[dim];
-	int * ubounds = new int[dim];
-	for (int i = 0; i < dim; i++){
-		lbounds[i] = Int_val(Field(vlbounds,i));
-		ubounds[i] = Int_val(Field(vubounds,i));
-	}
+	int * lbounds = get_cvector(vlbounds)->data();
+	int * ubounds = get_cvector(vubounds)->data();
 	d->extrapolateLUBounds(lbounds, ubounds);
-	delete lbounds;
-	delete ubounds;
 	return Val_unit;
 }
 
@@ -690,16 +723,9 @@ stub_dbm_diagonal_extrapolate_lu_bounds(value t, value vlbounds, value vubounds)
 {
 	CAMLparam3(t,vlbounds, vubounds);
 	dbm_t * d = get_dbm_ptr(t);
-	int dim = d->getDimension();
-	int * lbounds = new int[dim];
-	int * ubounds = new int[dim];
-	for (int i = 0; i < dim; i++){
-		lbounds[i] = Int_val(Field(vlbounds,i));
-		ubounds[i] = Int_val(Field(vubounds,i));
-	}
+    int * lbounds = get_cvector(vlbounds)->data();
+    int * ubounds = get_cvector(vubounds)->data();
 	d->diagonalExtrapolateLUBounds(lbounds, ubounds);
-	delete lbounds;
-	delete ubounds;
 	CAMLreturn(Val_unit);
 }
 
@@ -1168,6 +1194,20 @@ stub_fed_constrain(value t, value ct)
 }
 
 extern "C" CAMLprim value
+stub_fed_update_value(value t, value ct, value bt)
+{
+    CAMLparam3(t, ct, bt);
+    fed_t * fed = get_fed_tp(t);
+    int clock = Int_val(ct);
+    int bound = Int_val(bt);
+    for (fed_t::iterator it = fed->beginMutable(); !it.null(); ++it)
+    {
+        it->updateValue(clock, bound);
+    }
+    CAMLreturn(Val_unit);
+}
+
+extern "C" CAMLprim value
 stub_fed_reduce(value t)
 {
 	CAMLparam1(t);
@@ -1257,6 +1297,7 @@ stub_fed_begin_it(value t)
 }
 
 // Fed.Iterator interface
+// TODO seems to be bugged
 extern "C" CAMLprim value
 stub_fed_iterator_get(value t)
 {
