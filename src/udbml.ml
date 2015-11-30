@@ -31,65 +31,6 @@ struct
   external to_c : int array -> int -> t = "stub_carray_to_c";;
 end
 
-module type IDBM =
-sig
-  type t
-  
-  include BASIC_TYPES
-
-  val infty : int
-  val max_dim_power : int
-  val max_dim : int
-
-  val create : int -> t
-  val copy : t -> t
-  val copy_to : t -> raw_t array
-  val copy_from : raw_t array -> int -> t
-  val is_empty : t -> bool
-  val has_zero : t -> bool
-  val hash : t -> int
-  val dimension : t -> int
-  val at : t -> int -> int -> raw_t
-  val at_bound : t -> int -> int -> int
-
-  val equal : t -> t -> bool
-  val notequal : t -> t -> bool
-  val lt : t -> t -> bool
-  val gt : t -> t -> bool
-  val leq : t -> t -> bool
-  val geq : t -> t -> bool
-  val closure_leq : Carray.t -> Carray.t -> t -> t -> bool
-
-  val constrain : t -> clock_constraint_t -> unit
-
-  val set_init : t -> unit
-  val set_zero : t -> unit
-  val is_init : t -> bool
-  val is_zero : t -> bool
-
-  val intersect : t -> t -> unit
-  val intersects : t -> t -> bool
-  val up : t -> unit
-  val down : t -> unit
-
-  val free_clock : t -> cindex_t -> unit
-  val free_up : t -> cindex_t -> unit
-  val free_down : t -> cindex_t -> unit
-  val free_all_up : t -> unit
-  val free_all_down : t -> unit
-
-  val update_value : t -> cindex_t -> bound_t -> unit
-
-  val is_unbounded : t -> bool
-
-  val extrapolate_max_bounds : t -> Carray.t -> unit
-  val diagonal_extrapolate_max_bounds : t -> Carray.t -> unit
-  val extrapolate_lu_bounds : t -> Carray.t -> Carray.t -> unit
-  val diagonal_extrapolate_lu_bounds : t -> Carray.t -> Carray.t -> unit
-
-  val to_string : t -> string
-end
-
 module Basic_types =
 struct
   (** Abstract type for UDBM's bitvector used for resizing DBMs *)
@@ -281,6 +222,7 @@ struct
   external down : t -> unit = "stub_fed_down";;
   external free_clock : t -> cindex_t -> unit = "stub_fed_free_clock";;
   external constrain : t -> clock_constraint_t -> unit = "stub_fed_constrain";;
+  external update_value : t -> cindex_t -> bound_t -> unit = "stub_fed_update_value";;
   external reduce : t -> unit = "stub_fed_reduce";;
   external expensive_reduce : t -> unit = "stub_fed_expensive_reduce";;
   external merge_reduce : t -> int -> int -> unit = "stub_fed_merge_reduce";;
