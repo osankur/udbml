@@ -15,7 +15,7 @@ extern "C" {
 #include <vector>
 
 #define get_dbm_ptr(x) static_cast<dbm_wrap_t*>(Data_custom_val(x))
-#define get_fed_tp(x) ((fed_t*)((fed_wrap_t*)Data_custom_val(x))->d)
+#define get_fed_ptr(x) static_cast<fed_wrap_t*>(Data_custom_val(x))
 #define get_fed_it_tp(x) ((fed_t::iterator*)((fed_it_wrap_t*)Data_custom_val(x))->d)
 #define get_bitvector_tp(x) ((BitString*)((bitvector_wrap_t*)Data_custom_val(x))->b)
 using namespace dbm;
@@ -26,9 +26,7 @@ using namespace base;
 		the dbm_wrap_t will be freed by the gc.
 */
 typedef dbm_t dbm_wrap_t;
-typedef struct fed_wrap_t {
-	fed_t * d;
-} fed_wrap_t;
+typedef fed_t fed_wrap_t;
 typedef struct fed_it_wrap_t {
 	fed_t::iterator * d;
 } fed_it_wrap_t;
@@ -46,11 +44,10 @@ typedef struct bitvector_wrap_t {
 	 CAMLparam, CAMLreturn or any allocation function inside!
  */
 extern "C" void finalize_dbm(value v){
-    ((dbm_wrap_t *)Data_custom_val(v))->~dbm_t();
+    get_dbm_ptr(v)->~dbm_t();
 }
 extern "C" void finalize_fed(value v){
-	fed_wrap_t * d = (fed_wrap_t *)Data_custom_val(v);
-	delete(d->d);
+    get_fed_ptr(v)->~fed_t();
 }
 extern "C" void finalize_fed_it(value v){
 	fed_it_wrap_t * d = (fed_it_wrap_t *)Data_custom_val(v);
@@ -72,8 +69,8 @@ extern "C" int compare_dbm(value v1, value v2){
 }
 
 extern "C" int compare_fed(value v1, value v2){
-	fed_t * i1 = get_fed_tp(v1);
-	fed_t * i2 = get_fed_tp(v2);
+	fed_t * i1 = get_fed_ptr(v1);
+	fed_t * i2 = get_fed_ptr(v2);
 	if ( i1->sameAs(*i2) ) return 0;
 	if ( i1 < i2 ) return -1;
 	else if (i1 > i2) return 1;
@@ -98,8 +95,7 @@ extern "C" long hash_dbm(value v){
 	return (long)get_dbm_ptr(v)->hash();
 }
 extern "C" long hash_fed(value v){
-	fed_t * f = get_fed_tp(v);
-	return (long)f->hash();
+    return (long)get_fed_ptr(v)->hash();
 }
 extern "C" long hash_bitvector(value v){
 	return (long)get_bitvector_tp(v);
@@ -785,9 +781,8 @@ stub_fed_create(value size)
 	CAMLparam1(size);
 	CAMLlocal1(fw);
 	cindex_t dim = Int_val(size);
-	fed_t * f = new fed_t(dim);
-	fw = caml_alloc_custom(&custom_ops_fed, sizeof(fed_wrap_t), 0, 1);
-  ((fed_wrap_t*)Data_custom_val(fw))->d = f;
+    fw = caml_alloc_custom(&custom_ops_fed, sizeof(fed_wrap_t), 0, 1);
+    new (Data_custom_val(fw)) fed_wrap_t(dim);
 	CAMLreturn(fw);
 }
 
@@ -796,10 +791,9 @@ stub_fed_copy(value fw)
 {
 	CAMLparam1(fw);
 	CAMLlocal1(new_fw);
-	fed_t * f = get_fed_tp(fw);
-	fed_t * new_f = new fed_t(*f);
-	new_fw = caml_alloc_custom(&custom_ops_fed, sizeof(fed_wrap_t), 0, 1);
-  ((fed_wrap_t*)Data_custom_val(new_fw))->d = new_f;
+    new_fw = caml_alloc_custom(&custom_ops_fed, sizeof(fed_wrap_t), 0, 1);
+    fed_t * f = get_fed_ptr(fw);
+    new (Data_custom_val(new_fw)) fed_wrap_t(*f);
 	CAMLreturn(new_fw);
 }
 
@@ -807,13 +801,13 @@ extern "C" CAMLprim value
 stub_fed_dimension(value t)
 {
 	CAMLparam1(t);
-	CAMLreturn(Val_int(get_fed_tp(t)->getDimension()));
+	CAMLreturn(Val_int(get_fed_ptr(t)->getDimension()));
 }
 extern "C" CAMLprim value
 stub_fed_intern(value t)
 {
 	CAMLparam1(t);
-	fed_t * f = get_fed_tp(t);
+	fed_t * f = get_fed_ptr(t);
 	f->intern();
 	CAMLreturn(Val_unit);
 }
@@ -821,7 +815,7 @@ extern "C" CAMLprim value
 stub_fed_is_empty(value t)
 {
 	CAMLparam1(t);
-	fed_t * f = get_fed_tp(t);
+	fed_t * f = get_fed_ptr(t);
 	int ret = f->isEmpty();
 	CAMLreturn(Val_bool(ret));
 }
@@ -830,7 +824,7 @@ extern "C" CAMLprim value
 stub_fed_has_zero(value t)
 {
 	CAMLparam1(t);
-	fed_t * f = get_fed_tp(t);
+	fed_t * f = get_fed_ptr(t);
 	int ret = f->hasZero();
 	CAMLreturn(Val_bool(ret));
 }
@@ -838,7 +832,7 @@ extern "C" CAMLprim value
 stub_fed_hash(value t)
 {
 	CAMLparam1(t);
-	fed_t * f = get_fed_tp(t);
+	fed_t * f = get_fed_ptr(t);
 	unsigned ret = f->hash();
 	CAMLreturn(Val_int(ret));
 }
@@ -847,16 +841,16 @@ extern "C" CAMLprim value
 stub_fed_approx_equal(value t, value u)
 {
 	CAMLparam2(t,u);
-	fed_t * dt = get_fed_tp(t);
-	fed_t * du = get_fed_tp(u);
+	fed_t * dt = get_fed_ptr(t);
+	fed_t * du = get_fed_ptr(u);
 	CAMLreturn(Val_bool((*dt) == (*du)));
 }
 extern "C" CAMLprim value
 stub_fed_approx_notequal(value t, value u)
 {
 	CAMLparam2(t,u);
-	fed_t * dt = get_fed_tp(t);
-	fed_t * du = get_fed_tp(u);
+	fed_t * dt = get_fed_ptr(t);
+	fed_t * du = get_fed_ptr(u);
 	CAMLreturn(Val_bool((*dt) != (*du)));
 }
 
@@ -864,32 +858,32 @@ extern "C" CAMLprim value
 stub_fed_approx_lt(value t, value u)
 {
 	CAMLparam2(t,u);
-	fed_t * dt = get_fed_tp(t);
-	fed_t * du = get_fed_tp(u);
+	fed_t * dt = get_fed_ptr(t);
+	fed_t * du = get_fed_ptr(u);
 	CAMLreturn(Val_bool((*dt) < (*du)));
 }
 extern "C" CAMLprim value
 stub_fed_approx_leq(value t, value u)
 {
 	CAMLparam2(t,u);
-	fed_t * dt = get_fed_tp(t);
-	fed_t * du = get_fed_tp(u);
+	fed_t * dt = get_fed_ptr(t);
+	fed_t * du = get_fed_ptr(u);
 	CAMLreturn(Val_bool((*dt) <= (*du)));
 }
 extern "C" CAMLprim value
 stub_fed_approx_gt(value t, value u)
 {
 	CAMLparam2(t,u);
-	fed_t * dt = get_fed_tp(t);
-	fed_t * du = get_fed_tp(u);
+	fed_t * dt = get_fed_ptr(t);
+	fed_t * du = get_fed_ptr(u);
 	CAMLreturn(Val_bool((*dt) > (*du)));
 }
 extern "C" CAMLprim value
 stub_fed_approx_geq(value t, value u)
 {
 	CAMLparam2(t,u);
-	fed_t * dt = get_fed_tp(t);
-	fed_t * du = get_fed_tp(u);
+	fed_t * dt = get_fed_ptr(t);
+	fed_t * du = get_fed_ptr(u);
 	CAMLreturn(Val_bool((*dt) >= (*du)));
 }
 
@@ -897,7 +891,7 @@ extern "C" CAMLprim value
 stub_fed_approx_equal_dbm(value t, value u)
 {
 	CAMLparam2(t,u);
-	fed_t * dt = get_fed_tp(t);
+	fed_t * dt = get_fed_ptr(t);
 	const dbm_t & du = *get_dbm_ptr(u);
 	CAMLreturn(Val_bool((*dt) == du));
 }
@@ -905,7 +899,7 @@ extern "C" CAMLprim value
 stub_fed_approx_notequal_dbm(value t, value u)
 {
 	CAMLparam2(t,u);
-	fed_t * dt = get_fed_tp(t);
+	fed_t * dt = get_fed_ptr(t);
 	const dbm_t & du = *get_dbm_ptr(u);
 	CAMLreturn(Val_bool((*dt) != du));
 }
@@ -913,7 +907,7 @@ extern "C" CAMLprim value
 stub_fed_approx_lt_dbm(value t, value u)
 {
 	CAMLparam2(t,u);
-	fed_t * dt = get_fed_tp(t);
+	fed_t * dt = get_fed_ptr(t);
 	const dbm_t & du = *get_dbm_ptr(u);
 	CAMLreturn(Val_bool((*dt) < du));
 }
@@ -922,7 +916,7 @@ extern "C" CAMLprim value
 stub_fed_approx_gt_dbm(value t, value u)
 {
 	CAMLparam2(t,u);
-	fed_t * dt = get_fed_tp(t);
+	fed_t * dt = get_fed_ptr(t);
 	const dbm_t & du = *get_dbm_ptr(u);
 	CAMLreturn(Val_bool((*dt) > du));
 }
@@ -931,7 +925,7 @@ extern "C" CAMLprim value
 stub_fed_approx_geq_dbm(value t, value u)
 {
 	CAMLparam2(t,u);
-	fed_t * dt = get_fed_tp(t);
+	fed_t * dt = get_fed_ptr(t);
 	const dbm_t & du = *get_dbm_ptr(u);
 	CAMLreturn(Val_bool((*dt) >= du));
 }
@@ -940,40 +934,40 @@ extern "C" CAMLprim value
 stub_fed_exact_equal(value t, value u)
 {
 	CAMLparam2(t,u);
-	fed_t * dt = get_fed_tp(t);
-	fed_t * du = get_fed_tp(u);
+	fed_t * dt = get_fed_ptr(t);
+	fed_t * du = get_fed_ptr(u);
 	CAMLreturn(Val_bool(dt->eq(*du)));
 }
 extern "C" CAMLprim value
 stub_fed_exact_lt(value t, value u)
 {
 	CAMLparam2(t,u);
-	fed_t * dt = get_fed_tp(t);
-	fed_t * du = get_fed_tp(u);
+	fed_t * dt = get_fed_ptr(t);
+	fed_t * du = get_fed_ptr(u);
 	CAMLreturn(Val_bool(dt->lt(*du)));
 }
 extern "C" CAMLprim value
 stub_fed_exact_gt(value t, value u)
 {
 	CAMLparam2(t,u);
-	fed_t * dt = get_fed_tp(t);
-	fed_t * du = get_fed_tp(u);
+	fed_t * dt = get_fed_ptr(t);
+	fed_t * du = get_fed_ptr(u);
 	CAMLreturn(Val_bool(dt->gt(*du)));
 }
 extern "C" CAMLprim value
 stub_fed_exact_leq(value t, value u)
 {
 	CAMLparam2(t,u);
-	fed_t * dt = get_fed_tp(t);
-	fed_t * du = get_fed_tp(u);
+	fed_t * dt = get_fed_ptr(t);
+	fed_t * du = get_fed_ptr(u);
 	CAMLreturn(Val_bool(dt->le(*du)));
 }
 extern "C" CAMLprim value
 stub_fed_exact_geq(value t, value u)
 {
 	CAMLparam2(t,u);
-	fed_t * dt = get_fed_tp(t);
-	fed_t * du = get_fed_tp(u);
+	fed_t * dt = get_fed_ptr(t);
+	fed_t * du = get_fed_ptr(u);
 	CAMLreturn(Val_bool(dt->ge(*du)));
 }
 
@@ -981,7 +975,7 @@ extern "C" CAMLprim value
 stub_fed_exact_equal_dbm(value t, value u)
 {
 	CAMLparam2(t,u);
-	fed_t * dt = get_fed_tp(t);
+	fed_t * dt = get_fed_ptr(t);
 	const dbm_t & du = *get_dbm_ptr(u);
 	CAMLreturn(Val_bool(dt->ge(du)));
 }
@@ -989,7 +983,7 @@ extern "C" CAMLprim value
 stub_fed_exact_leq_dbm(value t, value u)
 {
 	CAMLparam2(t,u);
-	fed_t * dt = get_fed_tp(t);
+	fed_t * dt = get_fed_ptr(t);
 	const dbm_t & du = *get_dbm_ptr(u);
 	CAMLreturn(Val_bool(dt->le(du)));
 }
@@ -997,7 +991,7 @@ extern "C" CAMLprim value
 stub_fed_exact_lt_dbm(value t, value u)
 {
 	CAMLparam2(t,u);
-	fed_t * dt = get_fed_tp(t);
+	fed_t * dt = get_fed_ptr(t);
 	const dbm_t & du = *get_dbm_ptr(u);
 	CAMLreturn(Val_bool(dt->lt(du)));
 }
@@ -1005,7 +999,7 @@ extern "C" CAMLprim value
 stub_fed_exact_geq_dbm(value t, value u)
 {
 	CAMLparam2(t,u);
-	fed_t * dt = get_fed_tp(t);
+	fed_t * dt = get_fed_ptr(t);
 	const dbm_t & du = *get_dbm_ptr(u);
 	CAMLreturn(Val_bool(dt->ge(du)));
 }
@@ -1013,7 +1007,7 @@ extern "C" CAMLprim value
 stub_fed_exact_gt_dbm(value t, value u)
 {
 	CAMLparam2(t,u);
-	fed_t * dt = get_fed_tp(t);
+	fed_t * dt = get_fed_ptr(t);
 	const dbm_t & du = *get_dbm_ptr(u);
 	CAMLreturn(Val_bool(dt->gt(du)));
 }
@@ -1021,7 +1015,7 @@ extern "C" CAMLprim value
 stub_fed_set_init(value t)
 {
 	CAMLparam1(t);
-	fed_t * d = get_fed_tp(t);
+	fed_t * d = get_fed_ptr(t);
 	d->setInit();
 	CAMLreturn(Val_unit);
 }
@@ -1029,7 +1023,7 @@ extern "C" CAMLprim value
 stub_fed_convex_hull(value t)
 {
 	CAMLparam1(t);
-	fed_t * d = get_fed_tp(t);
+	fed_t * d = get_fed_ptr(t);
 	d->convexHull();
 	CAMLreturn(Val_unit);
 }
@@ -1037,8 +1031,8 @@ extern "C" CAMLprim value
 stub_fed_union(value t, value u)
 {
 	CAMLparam2(t,u);
-	fed_t * dt = get_fed_tp(t);
-	fed_t * du = get_fed_tp(u);
+	fed_t * dt = get_fed_ptr(t);
+	fed_t * du = get_fed_ptr(u);
 	(*dt) |= *du;
 	CAMLreturn(Val_unit);
 }
@@ -1046,8 +1040,8 @@ extern "C" CAMLprim value
 stub_fed_add(value t, value u)
 {
 	CAMLparam2(t,u);
-	fed_t * dt = get_fed_tp(t);
-	fed_t * du = get_fed_tp(u);
+	fed_t * dt = get_fed_ptr(t);
+	fed_t * du = get_fed_ptr(u);
 	dt->add(*du);
 	CAMLreturn(Val_unit);
 }
@@ -1055,7 +1049,7 @@ extern "C" CAMLprim value
 stub_fed_add_dbm(value t, value u)
 {
 	CAMLparam2(t,u);
-	fed_t * dt = get_fed_tp(t);
+	fed_t * dt = get_fed_ptr(t);
 	const dbm_t & du = *get_dbm_ptr(u);
 	dt->add(du);
 	CAMLreturn(Val_unit);
@@ -1066,8 +1060,8 @@ extern "C" CAMLprim value
 stub_fed_append(value t, value u)
 {
 	CAMLparam2(t,u);
-	fed_t * dt = get_fed_tp(t);
-	fed_t * du = get_fed_tp(u);
+	fed_t * dt = get_fed_ptr(t);
+	fed_t * du = get_fed_ptr(u);
 	dt->append(*du);
 	CAMLreturn(Val_unit);
 }
@@ -1075,8 +1069,8 @@ extern "C" CAMLprim value
 stub_fed_append_end(value t, value u)
 {
 	CAMLparam2(t,u);
-	fed_t * dt = get_fed_tp(t);
-	fed_t * du = get_fed_tp(u);
+	fed_t * dt = get_fed_ptr(t);
+	fed_t * du = get_fed_ptr(u);
 	dt->appendEnd(*du);
 	CAMLreturn(Val_unit);
 }
@@ -1084,8 +1078,8 @@ extern "C" CAMLprim value
 stub_fed_append_begin(value t, value u)
 {
 	CAMLparam2(t,u);
-	fed_t * dt = get_fed_tp(t);
-	fed_t * du = get_fed_tp(u);
+	fed_t * dt = get_fed_ptr(t);
+	fed_t * du = get_fed_ptr(u);
 	dt->appendBegin(*du);
 	CAMLreturn(Val_unit);
 }
@@ -1093,8 +1087,8 @@ extern "C" CAMLprim value
 stub_fed_steal(value t, value u)
 {
 	CAMLparam2(t,u);
-	fed_t * dt = get_fed_tp(t);
-	fed_t * du = get_fed_tp(u);
+	fed_t * dt = get_fed_ptr(t);
+	fed_t * du = get_fed_ptr(u);
 	dt->steal(*du);
 	CAMLreturn(Val_unit);
 }
@@ -1102,8 +1096,8 @@ extern "C" CAMLprim value
 stub_fed_convex_union(value t, value u)
 {
 	CAMLparam2(t,u);
-	fed_t * dt = get_fed_tp(t);
-	fed_t * du = get_fed_tp(u);
+	fed_t * dt = get_fed_ptr(t);
+	fed_t * du = get_fed_ptr(u);
 	(*dt) += (*du);
 	CAMLreturn(Val_unit);
 }
@@ -1111,7 +1105,7 @@ extern "C" CAMLprim value
 stub_fed_convex_union_dbm(value t, value u)
 {
 	CAMLparam2(t,u);
-	fed_t * dt = get_fed_tp(t);
+	fed_t * dt = get_fed_ptr(t);
 	const dbm_t & du = *get_dbm_ptr(u);
 	(*dt) += du;
 	CAMLreturn(Val_unit);
@@ -1120,8 +1114,8 @@ extern "C" CAMLprim value
 stub_fed_intersect(value t, value u)
 {
 	CAMLparam2(t,u);
-	fed_t * dt = get_fed_tp(t);
-	fed_t * du = get_fed_tp(u);
+	fed_t * dt = get_fed_ptr(t);
+	fed_t * du = get_fed_ptr(u);
 	(*dt) &= (*du);
 	CAMLreturn(Val_unit);
 }
@@ -1129,7 +1123,7 @@ extern "C" CAMLprim value
 stub_fed_intersect_dbm(value t, value u)
 {
 	CAMLparam2(t,u);
-	fed_t * dt = get_fed_tp(t);
+	fed_t * dt = get_fed_ptr(t);
 	const dbm_t & du = *get_dbm_ptr(u);
 	(*dt) &= du;
 	CAMLreturn(Val_unit);
@@ -1138,8 +1132,8 @@ extern "C" CAMLprim value
 stub_fed_subtract(value t, value u)
 {
 	CAMLparam2(t,u);
-	fed_t * dt = get_fed_tp(t);
-	fed_t * du = get_fed_tp(u);
+	fed_t * dt = get_fed_ptr(t);
+	fed_t * du = get_fed_ptr(u);
 	(*dt) -= (*du);
 	CAMLreturn(Val_unit);
 }
@@ -1147,7 +1141,7 @@ extern "C" CAMLprim value
 stub_fed_subtract_dbm(value t, value u)
 {
 	CAMLparam2(t,u);
-	fed_t * dt = get_fed_tp(t);
+	fed_t * dt = get_fed_ptr(t);
 	const dbm_t & du = *get_dbm_ptr(u);
 	(*dt) -= du;
 	CAMLreturn(Val_unit);
@@ -1156,7 +1150,7 @@ extern "C" CAMLprim value
 stub_fed_up(value t)
 {
 	CAMLparam1(t);
-	fed_t * d = get_fed_tp(t);
+	fed_t * d = get_fed_ptr(t);
 	d->up();
 	CAMLreturn(Val_unit);
 }
@@ -1164,7 +1158,7 @@ extern "C" CAMLprim value
 stub_fed_down(value t)
 {
 	CAMLparam1(t);
-	fed_t * d = get_fed_tp(t);
+	fed_t * d = get_fed_ptr(t);
 	d->down();
 	CAMLreturn(Val_unit);
 }
@@ -1172,7 +1166,7 @@ extern "C" CAMLprim value
 stub_fed_free_clock(value t, value cl)
 {
 	CAMLparam2(t,cl);
-	fed_t * d = get_fed_tp(t);
+	fed_t * d = get_fed_ptr(t);
 	cindex_t icl = Int_val(cl);
 	d->freeClock(icl);
 	CAMLreturn(Val_unit);
@@ -1187,7 +1181,7 @@ stub_fed_constrain(value t, value ct)
 	j = Field(ct,1);
 	b = Field(Field(ct,2),0);
 	ineq = Field(Field(ct,2),1);
-	fed_t * d = get_fed_tp(t);
+	fed_t * d = get_fed_ptr(t);
 	raw_t r = dbm_boundbool2raw(Int_val(b), Int_val(ineq) == 0);
 	d->constrain(Int_val(i), Int_val(j), r);
 	CAMLreturn(Val_unit);
@@ -1197,13 +1191,8 @@ extern "C" CAMLprim value
 stub_fed_update_value(value t, value ct, value bt)
 {
     CAMLparam3(t, ct, bt);
-    fed_t * fed = get_fed_tp(t);
-    int clock = Int_val(ct);
-    int bound = Int_val(bt);
-    for (fed_t::iterator it = fed->beginMutable(); !it.null(); ++it)
-    {
-        it->updateValue(clock, bound);
-    }
+    fed_t * fed = get_fed_ptr(t);
+    fed->updateValue(Int_val(ct), Int_val(bt));
     CAMLreturn(Val_unit);
 }
 
@@ -1211,7 +1200,7 @@ extern "C" CAMLprim value
 stub_fed_reduce(value t)
 {
 	CAMLparam1(t);
-	fed_t * d = get_fed_tp(t);
+	fed_t * d = get_fed_ptr(t);
 	d->reduce();
 	CAMLreturn(Val_unit);
 }
@@ -1219,7 +1208,7 @@ extern "C" CAMLprim value
 stub_fed_expensive_reduce(value t)
 {
 	CAMLparam1(t);
-	fed_t * d = get_fed_tp(t);
+	fed_t * d = get_fed_ptr(t);
 	d->expensiveReduce();
 	CAMLreturn(Val_unit);
 }
@@ -1227,7 +1216,7 @@ extern "C" CAMLprim value
 stub_fed_merge_reduce(value t, value vskip, value vlevel)
 {
 	CAMLparam1(t);
-	fed_t * d = get_fed_tp(t);
+	fed_t * d = get_fed_ptr(t);
 	d->mergeReduce(Int_val(vskip), Int_val(vlevel));
 	CAMLreturn(Val_unit);
 }
@@ -1235,7 +1224,7 @@ extern "C" CAMLprim value
 stub_fed_convex_reduce(value t)
 {
 	CAMLparam1(t);
-	fed_t * d = get_fed_tp(t);
+	fed_t * d = get_fed_ptr(t);
 	d->convexReduce();
 	CAMLreturn(Val_unit);
 }
@@ -1243,7 +1232,7 @@ extern "C" CAMLprim value
 stub_fed_expensive_convex_reduce(value t)
 {
 	CAMLparam1(t);
-	fed_t * d = get_fed_tp(t);
+	fed_t * d = get_fed_ptr(t);
 	d->expensiveConvexReduce();
 	CAMLreturn(Val_unit);
 }
@@ -1251,7 +1240,7 @@ extern "C" CAMLprim value
 stub_fed_partition_reduce(value t)
 {
 	CAMLparam1(t);
-	fed_t * d = get_fed_tp(t);
+	fed_t * d = get_fed_ptr(t);
 	d->partitionReduce();
 	CAMLreturn(Val_unit);
 }
@@ -1260,8 +1249,8 @@ extern "C" CAMLprim value
 stub_fed_predt(value t, value vbad, value vrestrict)
 {
 	CAMLparam1(t);
-	fed_t * d = get_fed_tp(t);
-	fed_t * bad = get_fed_tp(vbad);
+	fed_t * d = get_fed_ptr(t);
+	fed_t * bad = get_fed_ptr(vbad);
 	const raw_t * restrict = (Val_int(vrestrict) == 0)? NULL : (get_dbm_ptr(Field(vrestrict,0)))->const_dbm();
 	d->predt(*bad, restrict);
 	CAMLreturn(Val_unit);
@@ -1270,7 +1259,7 @@ extern "C" CAMLprim value
 stub_fed__internal_addr(value t)
 {
 	CAMLparam1(t);
-	fed_t * d = get_fed_tp(t);
+	fed_t * d = get_fed_ptr(t);
 	CAMLreturn(Val_long((long)d));
 }
 
@@ -1278,9 +1267,9 @@ extern "C" CAMLprim value
 stub_fed_is_included_in_predt(value t, value vgood, value vbad)
 {
 	CAMLparam1(t);
-	fed_t * d = get_fed_tp(t);
-	fed_t * bad = get_fed_tp(vbad);
-	fed_t * good = get_fed_tp(vgood);
+	fed_t * d = get_fed_ptr(t);
+	fed_t * bad = get_fed_ptr(vbad);
+	fed_t * good = get_fed_ptr(vgood);
 	CAMLreturn(Val_bool(d->isIncludedInPredt(*good, *bad)));
 }
 extern "C" CAMLprim value
@@ -1288,7 +1277,7 @@ stub_fed_begin_it(value t)
 {
 	CAMLparam1(t);
 	CAMLlocal1(fitw);
-	fed_t * d = get_fed_tp(t);
+	fed_t * d = get_fed_ptr(t);
 	fitw = caml_alloc_custom(&custom_ops_fed_it, sizeof(fed_it_wrap_t), 0, 1);
 	fed_t::iterator * it = new fed_t::iterator();
 	*it = d->beginMutable();
