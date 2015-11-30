@@ -87,19 +87,19 @@ struct
 
   external at : t -> int -> int -> raw_t = "stub_dbm_at";;
   external at_bound : t -> int -> int -> int = "stub_dbm_at_bound" "noalloc";;
-  external equal : t -> t -> bool = "stub_dbm_equal";;
-  external notequal : t -> t -> bool = "stub_dbm_notequal";;
-  external lt : t -> t -> bool = "stub_dbm_lt";;
-  external gt : t -> t -> bool = "stub_dbm_gt";;
-  external leq : t -> t -> bool = "stub_dbm_leq";;
-  external geq : t -> t -> bool = "stub_dbm_geq";;
+  external equal : t -> t -> bool = "stub_dbm_equal" "noalloc";;
+  external notequal : t -> t -> bool = "stub_dbm_notequal" "noalloc";;
+  external lt : t -> t -> bool = "stub_dbm_lt" "noalloc";;
+  external gt : t -> t -> bool = "stub_dbm_gt" "noalloc";;
+  external leq : t -> t -> bool = "stub_dbm_leq" "noalloc";;
+  external geq : t -> t -> bool = "stub_dbm_geq" "noalloc";;
 
   external closure_leq : Carray.t -> Carray.t -> t -> t -> bool =
     "stub_dbm_closure_leq" "noalloc";;
 
-  external constrain : t -> clock_constraint_t -> unit = "stub_dbm_constrain";;
+  external constrain : t -> clock_constraint_t -> unit = "stub_dbm_constrain" "noalloc";;
   external copy_to : t -> raw_t array = "stub_dbm_copy_to";;
-  external set_init : t -> unit = "stub_dbm_set_init";;
+  external set_init : t -> unit = "stub_dbm_set_init" "noalloc";;
   external set_zero : t -> unit = "stub_dbm_set_zero";;
   external is_zero : t -> bool = "stub_dbm_is_zero";;
   external is_init : t -> bool = "stub_dbm_is_init";;
@@ -173,7 +173,7 @@ struct
   external copy : t -> t = "stub_fed_copy";;
   external dimension : t -> int = "stub_fed_dimension";;
   external intern : t -> unit = "stub_fed_intern";;
-  external is_empty : t -> bool = "stub_fed_is_empty";;
+  external is_empty : t -> bool = "stub_fed_is_empty" "noalloc";;
   external has_zero : t -> bool = "stub_fed_has_zero";;
   external hash : t -> int = "stub_fed_hash";;
   external set_init : t -> unit = "stub_fed_set_init";;
@@ -214,15 +214,15 @@ struct
 
   external convex_union : t -> t -> unit = "stub_fed_convex_union";;
   external convex_union_dbm : t -> Dbm.t -> unit = "stub_fed_convex_union_dbm";;
-  external intersect : t -> t -> unit = "stub_fed_intersect";;
-  external intersect_dbm : t -> Dbm.t -> unit = "stub_fed_intersect_dbm";;
+  external intersect : t -> t -> unit = "stub_fed_intersect" "noalloc";;
+  external intersect_dbm : t -> Dbm.t -> unit = "stub_fed_intersect_dbm" "noalloc";;
   external subtract : t -> t -> unit = "stub_fed_subtract";;
   external subtract_dbm : t -> Dbm.t -> unit = "stub_fed_subtract_dbm";;
-  external up : t -> unit = "stub_fed_up";;
-  external down : t -> unit = "stub_fed_down";;
+  external up : t -> unit = "stub_fed_up" "noalloc";;
+  external down : t -> unit = "stub_fed_down" "noalloc";;
   external free_clock : t -> cindex_t -> unit = "stub_fed_free_clock";;
   external constrain : t -> clock_constraint_t -> unit = "stub_fed_constrain";;
-  external update_value : t -> cindex_t -> bound_t -> unit = "stub_fed_update_value";;
+  external update_value : t -> cindex_t -> bound_t -> unit = "stub_fed_update_value" "noalloc";;
   external reduce : t -> unit = "stub_fed_reduce";;
   external expensive_reduce : t -> unit = "stub_fed_expensive_reduce";;
   external merge_reduce : t -> int -> int -> unit = "stub_fed_merge_reduce";;

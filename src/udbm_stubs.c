@@ -315,10 +315,8 @@ stub_dbm_hash(value t)
 extern "C" CAMLprim value
 stub_dbm_set_init(value t)
 {
-	CAMLparam1(t);
-	dbm_t * d = get_dbm_ptr(t);
-	d->setInit();
-	CAMLreturn(Val_unit);
+    get_dbm_ptr(t)->setInit();
+	return Val_unit;
 }
 
 extern "C"
@@ -384,72 +382,64 @@ stub_dbm_at_bound(value t, value i, value j){
 extern "C" CAMLprim value
 stub_dbm_equal(value t, value u)
 {
-	CAMLparam2(t,u);
 	const dbm_t & dt = *get_dbm_ptr(t);
 	const dbm_t & du = *get_dbm_ptr(u);
 	int ret = (dt == du);
-	CAMLreturn(Val_bool(ret));
+	return Val_bool(ret);
 }
 extern "C" CAMLprim value
 stub_dbm_notequal(value t, value u)
 {
-	CAMLparam2(t,u);
     const dbm_t & dt = *get_dbm_ptr(t);
     const dbm_t & du = *get_dbm_ptr(u);
 	int ret = (dt != du);
-	CAMLreturn(Val_bool(ret));
+	return Val_bool(ret);
 }
 extern "C" CAMLprim value
 stub_dbm_lt(value t, value u)
 {
-	CAMLparam2(t,u);
     const dbm_t & dt = *get_dbm_ptr(t);
     const dbm_t & du = *get_dbm_ptr(u);
 	int ret = (dt < du);
-	CAMLreturn(Val_bool(ret));
+	return Val_bool(ret);
 }
 extern "C" CAMLprim value
 stub_dbm_gt(value t, value u)
 {
-	CAMLparam2(t,u);
     const dbm_t & dt = *get_dbm_ptr(t);
     const dbm_t & du = *get_dbm_ptr(u);
 	int ret = (dt > du);
-	CAMLreturn(Val_bool(ret));
+	return Val_bool(ret);
 }
 extern "C" CAMLprim value
 stub_dbm_leq(value t, value u)
 {
-	CAMLparam2(t,u);
     const dbm_t & dt = *get_dbm_ptr(t);
     const dbm_t & du = *get_dbm_ptr(u);
 	int ret = (dt <= du);
-	CAMLreturn(Val_bool(ret));
+	return Val_bool(ret);
 }
 extern "C" CAMLprim value
 stub_dbm_geq(value t, value u)
 {
-	CAMLparam2(t,u);
     const dbm_t & dt = *get_dbm_ptr(t);
     const dbm_t & du = *get_dbm_ptr(u);
 	int ret = (dt >= du);
-	CAMLreturn(Val_bool(ret));
+	return Val_bool(ret);
 }
 
 extern "C" CAMLprim value
 stub_dbm_constrain(value t, value ct)
 {
-	CAMLparam2(t,ct);
-	CAMLlocal4(i,j,b,ineq);
 	// a constraint is (i,j,(b,ineq))
-	i = Field(ct,0);
-	j = Field(ct,1);
-	b = Field(Field(ct,2),0);
-	ineq = Field(Field(ct,2),1);
+	int i = Int_val(Field(ct,0));
+	int j = Int_val(Field(ct,1));
+	int b = Int_val(Field(Field(ct,2),0));
+	int ineq = Int_val(Field(Field(ct,2),1));
 	dbm_t * d = get_dbm_ptr(t);
-	raw_t r = dbm_boundbool2raw(Int_val(b), Int_val(ineq) == 0);
-	d->constrain(Int_val(i), Int_val(j), r);
-	CAMLreturn(Val_unit);
+	raw_t r = dbm_boundbool2raw(b, ineq == 0);
+	d->constrain(i, j, r);
+	return Val_unit;
 }
 
 extern "C" CAMLprim value
@@ -814,10 +804,9 @@ stub_fed_intern(value t)
 extern "C" CAMLprim value
 stub_fed_is_empty(value t)
 {
-	CAMLparam1(t);
 	fed_t * f = get_fed_ptr(t);
 	int ret = f->isEmpty();
-	CAMLreturn(Val_bool(ret));
+	return Val_bool(ret);
 }
 
 extern "C" CAMLprim value
@@ -1113,20 +1102,18 @@ stub_fed_convex_union_dbm(value t, value u)
 extern "C" CAMLprim value
 stub_fed_intersect(value t, value u)
 {
-	CAMLparam2(t,u);
 	fed_t * dt = get_fed_ptr(t);
 	fed_t * du = get_fed_ptr(u);
 	(*dt) &= (*du);
-	CAMLreturn(Val_unit);
+	return Val_unit;
 }
 extern "C" CAMLprim value
 stub_fed_intersect_dbm(value t, value u)
 {
-	CAMLparam2(t,u);
 	fed_t * dt = get_fed_ptr(t);
 	const dbm_t & du = *get_dbm_ptr(u);
 	(*dt) &= du;
-	CAMLreturn(Val_unit);
+	return Val_unit;
 }
 extern "C" CAMLprim value
 stub_fed_subtract(value t, value u)
@@ -1149,18 +1136,16 @@ stub_fed_subtract_dbm(value t, value u)
 extern "C" CAMLprim value
 stub_fed_up(value t)
 {
-	CAMLparam1(t);
 	fed_t * d = get_fed_ptr(t);
 	d->up();
-	CAMLreturn(Val_unit);
+	return Val_unit;
 }
 extern "C" CAMLprim value
 stub_fed_down(value t)
 {
-	CAMLparam1(t);
 	fed_t * d = get_fed_ptr(t);
 	d->down();
-	CAMLreturn(Val_unit);
+	return Val_unit;
 }
 extern "C" CAMLprim value
 stub_fed_free_clock(value t, value cl)
@@ -1190,10 +1175,9 @@ stub_fed_constrain(value t, value ct)
 extern "C" CAMLprim value
 stub_fed_update_value(value t, value ct, value bt)
 {
-    CAMLparam3(t, ct, bt);
     fed_t * fed = get_fed_ptr(t);
     fed->updateValue(Int_val(ct), Int_val(bt));
-    CAMLreturn(Val_unit);
+    return Val_unit;
 }
 
 extern "C" CAMLprim value
