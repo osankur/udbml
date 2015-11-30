@@ -9,6 +9,7 @@ extern "C" {
 }
 #include <dbm/fed.h>
 #include <dbm/pfed.h>
+#include <base/bitstring.h>
 
 #include "udbm_stubs.h"
 
@@ -250,6 +251,202 @@ stub_pdbm_geq(value v1, value v2)
     relation_t rel = pdbm_relation(p1, p2, p1.getDimension());
     if (rel & base_GREATER) return Val_bool(true);
     return Val_bool(false);
+}
+
+// a function that builds the product priced zone for a given subset of clocks Y
+// the corresponding function has rates
+//   - r(x)     if x is in Y
+//   r'(x)      if x' is in Y'
+//   - r(x)     if x is in X-Y
+//   - r'(x)    if x' is in X'-Y'
+// TODO what about the constant term in zeta and zeta'??
+// TODO optimize by using only 2|X| - |Y| clocks
+//      beware that the rate for x in Y would then be r'(x) - r(x)
+pdbm_t
+pdbm_build_product(const pdbm_t &z1,
+                   const pdbm_t &z2,
+                   const std::vector<int> &mbounds,
+                   const base::BitString &y)
+{
+    assert(getDimension(z1) == getDimension(z2));
+    int dim = z1.getDimension();
+    int ndim = 2*dim-1;
+    // create a new dbm of size 2*dim-1 (the reference clock need not be duplicated)
+    pdbm_t result = pdbm_t(ndim);
+    // initialize
+    pdbm_init(result, ndim);
+    // constrain it
+    // WARNING the reference clock is not duplicated
+    // TODO consider using pdbm_constrainN instead
+    for (int i = 0; i < dim; ++i)
+    {
+        if (i > 0)
+        {
+            // constrain it with x <= M for x in Y, x > M otherwise
+            if (y.getBit(i) == ONE)
+            {
+                pdbm_constrain1(result, ndim, i, 0, dbm_boundbool2raw(mbounds[i], false));
+                pdbm_constrain1(result, ndim, i+dim-1, 0, dbm_boundbool2raw(mbounds[i], false));
+
+                // constrain it with x == x' for x in Y
+                pdbm_constrain1(result, ndim, i, i+dim-1, dbm_boundbool2raw(0, false));
+                pdbm_constrain1(result, ndim, i+dim-1, i, dbm_boundbool2raw(0, false));
+            }
+            else
+            {
+                pdbm_constrain1(result, ndim, 0, i, dbm_boundbool2raw(-mbounds[i], true));
+                pdbm_constrain1(result, ndim, 0, i+dim-1, dbm_boundbool2raw(-mbounds[i], true));
+            }
+        }
+
+        for (int j = 0; j < dim; ++j)
+        {
+            // constrain from z1
+            pdbm_constrain1(result, ndim, i, j, z1(i,j));
+            // constrain from z2
+            pdbm_constrain1(result, ndim, i?i+dim-1:0, j?j+dim-1:0, z2(i,j));
+        }
+    }
+
+    // build the corresponding cost function
+    // negate the function, so that its infimum corresponds to the supremum we want
+    // (the API computes the infimum rather than the supremum)
+    for (int i = 1; i < dim; ++i)
+    {
+        if (y.getBit(i) == ONE)
+        {
+            pdbm_setRate(result, ndim, i, pdbm_getRate(z1, dim, i));
+            pdbm_setRate(result, ndim, i+dim-1, - pdbm_getRate(z2, dim, i));
+        }
+        else
+        {
+            pdbm_setRate(result, ndim, i, pdbm_getRate(z1, dim, i));
+            pdbm_setRate(result, ndim, i+dim-1, pdbm_getRate(z2, dim, i));
+        }
+    }
+
+    // return the result
+    return result;
+}
+
+// check whether a priced zone dominates another
+// this is based on the exploration of all subsets of clocks
+// TODO better incremental construction of the Z_Y, typically with a Gros-Gray enumeration
+bool
+pdbm_square_inclusion_exp(const pdbm_t &z1, const pdbm_t &z2, const std::vector<int> &mbounds)
+{
+    // get the dimension
+    int dim = z1.getDimension();
+    // initialize bit vector to 0
+    base::BitString currentY(dim);
+    assert(currentY.isEmpty());
+
+    // the main loop
+    do
+    {
+        // first check whether Z_Y is empty
+        pdbm_t zy1 = z1;
+        pdbm_t zy2 = z2;
+        for (int i = 1; (! pdbm_isEmpty(zy1, dim)) && i < dim; ++i)
+        {
+            if (currentY.getBit(i) == ONE)
+            {
+                pdbm_constrain1(zy1, dim, i, 0, dbm_boundbool2raw(mbounds[i], false));
+                if ((! pdbm_isEmpty(zy2, dim)))
+                    pdbm_constrain1(zy2, dim, i, 0, dbm_boundbool2raw(mbounds[i], false));
+            } else {
+                pdbm_constrain1(zy1, dim, 0, i, dbm_boundbool2raw(-mbounds[i], true));
+                if (! pdbm_isEmpty(zy2, dim))
+                    pdbm_constrain1(zy2, dim, 0, i, dbm_boundbool2raw(-mbounds[i], true));
+            }
+        }
+
+        if (! pdbm_isEmpty(zy1, dim))
+        {
+            if (pdbm_isEmpty(zy2, dim))
+                return false;
+
+            // check whether all elements of Z have an equivalent in Z'
+            // i.e. check whether Z_Y \subseteq Z_Y'
+            // if not, return early
+            int ydim = currentY.count() + 1;
+            // if ydim, it suffices to check (zy1 non-empty) implies (zy2 non-empty)
+            // this has been done above
+            if (ydim > 1)
+            {
+                dbm_t uz1;
+                uz1.copyFrom(zy1.const_dbm(), z1.getDimension());
+                dbm_t uz2;
+                uz2.copyFrom(zy2.const_dbm(), z2.getDimension());
+
+                cindex_t * target = new cindex_t[ydim];
+                target[0] = 0;
+                int j = 1;
+                for (int i = 1; i < dim; ++i)
+                {
+                    if (currentY.getBit(i) == ONE)
+                    {
+                        target[j++] = i;
+                    }
+                }
+                uz1.changeClocks(target, ydim);
+                uz2.changeClocks(target, ydim);
+                delete [] target;
+                if (! (uz1 <= uz2))
+                    return false;
+            }
+
+            // build the product for the current Y
+            pdbm_t prody = pdbm_build_product(z1, z2, mbounds, currentY);
+
+            // get the valuation where the infimum of the product zone is reached
+            int32_t * inf_val = new int32_t[prody.getDimension()];
+            // TODO do not build this array every time, make it static somehow
+            bool * free_clocks = new bool[prody.getDimension()];
+            for (int i = 0; i < prody.getDimension(); ++i)
+            {
+                free_clocks[i] = true;
+            }
+            pdbm_getInfimumValuation(prody, prody.getDimension(), inf_val, free_clocks);
+
+            // use this valuation to evaluate the searched sup for the current Y
+            // inf_val = (v0,v0') and local_sup = z2(v0') - z1(v0)
+            int32_t local_sup =   pdbm_getCostOfValuation(z2, dim, inf_val + dim - 1)
+                                - pdbm_getCostOfValuation(z1, dim, inf_val);
+
+            // free
+            delete [] free_clocks;
+            delete [] inf_val;
+
+            // if positive, return early
+            if (local_sup > 0)
+                return false;
+        }
+
+        // go to next Y
+        for (int i = 1; i < dim; ++i)
+        {
+            if (currentY.getBit(i) == ONE)
+            {
+                currentY -= i;
+            }
+            else
+            {
+                currentY += i;
+                break;
+            }
+        }
+
+    } while (! currentY.isEmpty());
+
+    return true;
+}
+
+extern "C" CAMLprim value
+stub_pdbm_square_inclusion_exp(value t1, value t2, value mvec)
+{
+    bool result = pdbm_square_inclusion_exp(*get_pdbm_ptr(t1), *get_pdbm_ptr(t2), *get_cvector(mvec));
+    return Val_bool(result);
 }
 
 extern "C" CAMLprim value

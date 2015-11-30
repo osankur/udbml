@@ -24,6 +24,8 @@ struct
   external leq : t -> t -> bool = "stub_pdbm_leq" "noalloc";;
   external geq : t -> t -> bool = "stub_pdbm_geq" "noalloc";;
 
+  external square_inclusion_exp : t -> t -> Udbml.Carray.t -> bool = "stub_pdbm_square_inclusion_exp" "noalloc";;
+
   external constrain : t -> clock_constraint_t -> unit =
     "stub_pdbm_constrain" "noalloc";;
 
