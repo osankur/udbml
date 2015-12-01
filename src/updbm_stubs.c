@@ -347,23 +347,25 @@ pdbm_square_inclusion_exp(const pdbm_t &z1, const pdbm_t &z2, const std::vector<
         // first check whether Z_Y is empty
         pdbm_t zy1 = z1;
         pdbm_t zy2 = z2;
-        for (int i = 1; (! pdbm_isEmpty(zy1, dim)) && i < dim; ++i)
+        bool zy1_not_empty = true;
+        bool zy2_not_empty = true;
+        for (int i = 1; zy1_not_empty && i < dim; ++i)
         {
             if (currentY.getBit(i) == ONE)
             {
-                pdbm_constrain1(zy1, dim, i, 0, dbm_boundbool2raw(mbounds[i], false));
-                if ((! pdbm_isEmpty(zy2, dim)))
-                    pdbm_constrain1(zy2, dim, i, 0, dbm_boundbool2raw(mbounds[i], false));
+                zy1_not_empty = pdbm_constrain1(zy1, dim, i, 0, dbm_boundbool2raw(mbounds[i], false));
+                if (zy2_not_empty)
+                    zy2_not_empty = pdbm_constrain1(zy2, dim, i, 0, dbm_boundbool2raw(mbounds[i], false));
             } else {
-                pdbm_constrain1(zy1, dim, 0, i, dbm_boundbool2raw(-mbounds[i], true));
-                if (! pdbm_isEmpty(zy2, dim))
-                    pdbm_constrain1(zy2, dim, 0, i, dbm_boundbool2raw(-mbounds[i], true));
+                zy1_not_empty = pdbm_constrain1(zy1, dim, 0, i, dbm_boundbool2raw(-mbounds[i], true));
+                if (zy2_not_empty)
+                    zy2_not_empty = pdbm_constrain1(zy2, dim, 0, i, dbm_boundbool2raw(-mbounds[i], true));
             }
         }
 
-        if (! pdbm_isEmpty(zy1, dim))
+        if (zy1_not_empty)
         {
-            if (pdbm_isEmpty(zy2, dim))
+            if (! zy2_not_empty)
                 return false;
 
             // check whether all elements of Z have an equivalent in Z'
