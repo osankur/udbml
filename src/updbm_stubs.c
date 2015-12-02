@@ -11,6 +11,8 @@ extern "C" {
 #include <dbm/pfed.h>
 #include <base/bitstring.h>
 
+#include <unordered_map>
+
 #include "udbm_stubs.h"
 
 #define get_pdbm_ptr(x) (static_cast<pdbm_wrap_t*>(Data_custom_val(x)))
@@ -106,6 +108,18 @@ static struct custom_operations custom_ops_pfed_it = {
     .serialize          = custom_serialize_default,
     .deserialize        = custom_deserialize_default
 };
+
+namespace std
+{
+    template<>
+    struct hash<pdbm_t>
+    {
+        size_t operator()(const pdbm_t &p) const
+        {
+            return p.hash();
+        }
+    };
+}
 
 // The pdbm interface
 extern "C" CAMLprim value
@@ -253,6 +267,155 @@ stub_pdbm_geq(value v1, value v2)
     return Val_bool(false);
 }
 
+// TODO turn it into a class?
+typedef std::vector<std::vector<std::vector<int> > > clock_po_t;
+
+// TODO consider using clocks that are always or never in Y
+//      because Z is included in x <= M(x) or in x > M(x) respectively
+class clock_po_iterator
+{
+public:
+    explicit clock_po_iterator(const clock_po_t &o, int dim)
+    : _order(o)
+    , _state(o.size())
+    , _is_in(dim)
+    , _size(0)
+    {}
+
+    bool
+    is_in(int i) const
+    {
+        return _is_in[i];
+    }
+
+    cindex_t
+    count() const
+    {
+        return _size;
+    }
+
+    bool done() const { return _size == 0; }
+
+    void
+    next()
+    {
+        for (size_t i = 0; i < _order.size(); ++i)
+        {
+            if (_state[i] == _order[i].size())
+            {
+                _state[i] = 0;
+                // remove indices from _is_in
+                for (size_t j = 0; j < _order[i].size(); ++j)
+                {
+                    for (auto &v : _order[i][j])
+                    {
+                        _is_in[v] = false;
+                        --_size;
+                    }
+                }
+            }
+            else
+            {
+                // add indices to is_in
+                for (auto &v : _order[i][_state[i]])
+                {
+                    assert(v < _is_in.size());
+                    _is_in[v] = true;
+                    ++_size;
+                }
+                ++(_state[i]);
+                return;
+            }
+        }
+    }
+
+    void
+    print_preorder() const
+    {
+        printf("preorder is\n");
+        for (size_t i = 0; i < _order.size(); ++i)
+        {
+            printf("chain:\n");
+            for (size_t j = 0; j < _order[i].size(); ++j)
+            {
+                printf("cycle:");
+                for (auto &v : _order[i][j])
+                {
+                    printf("%d,", v);
+                }
+                printf("\n");
+            }
+        }
+        printf("\n\n");
+    }
+
+
+private:
+    const clock_po_t & _order;
+    std::vector<int> _state; // same size as _order
+    std::vector<bool> _is_in; // same size as dim
+    cindex_t _size; // the size of the current subset
+};
+
+clock_po_t
+build_clock_preorder(const pdbm_t &z, const std::vector<int> &mbounds)
+{
+    int dim = z.getDimension();
+    // build the preorder on clocks wrt z
+    clock_po_t result;
+    result.push_back(std::vector<std::vector<int> >(1, std::vector<int>(1,1)));
+    for (int i = 2; i < dim; ++i)
+    {
+        bool to_insert = true;
+        for (auto it = result.begin(); to_insert && it != result.end(); ++it)
+        {
+            int k = 0;
+            while (to_insert)
+            {
+                if (k == it->size())
+                {
+                    it->insert(it->begin()+k, std::vector<int>(1,i));
+                    to_insert = false;
+                }
+                else
+                {
+                    int j = (*it)[k][0];
+                    bool i_preceq_j;
+                    bool j_preceq_i;
+                    i_preceq_j = (z.const_dbm()[i*dim+j] <= dbm_boundbool2raw(mbounds[i] - mbounds[j], false));
+                    j_preceq_i = (z.const_dbm()[j*dim+i] <= dbm_boundbool2raw(mbounds[j] - mbounds[i], false));
+
+                    if (i_preceq_j && j_preceq_i)
+                    {
+                        (*it)[k].push_back(i);
+                        to_insert = false;
+                    }
+                    else if (i_preceq_j)
+                    {
+                        it->insert(it->begin()+k, std::vector<int>(1,i));
+                        to_insert = false;
+                    }
+                    else if (j_preceq_i)
+                    {
+                        ++k;
+                    }
+                    else
+                    {
+                        break;
+                    }
+                }
+            }
+
+        }
+
+        if (to_insert)
+        {
+            result.push_back(std::vector<std::vector<int> >(1, std::vector<int>(1,i)));
+        }
+    }
+    return result;
+}
+
 // a function that builds the product priced zone for a given subset of clocks Y
 // the corresponding function has rates
 //   - r(x)     if x is in Y
@@ -266,9 +429,9 @@ pdbm_t
 pdbm_build_product(const pdbm_t &z1,
                    const pdbm_t &z2,
                    const std::vector<int> &mbounds,
-                   const base::BitString &y)
+                   const clock_po_iterator &y)
 {
-    assert(getDimension(z1) == getDimension(z2));
+    assert(z1.getDimension() == z2.getDimension());
     int dim = z1.getDimension();
     int ndim = 2*dim-1;
     // create a new dbm of size 2*dim-1 (the reference clock need not be duplicated)
@@ -283,7 +446,7 @@ pdbm_build_product(const pdbm_t &z1,
         if (i > 0)
         {
             // constrain it with x <= M for x in Y, x > M otherwise
-            if (y.getBit(i) == ONE)
+            if (y.is_in(i))
             {
                 pdbm_constrain1(result, ndim, i, 0, dbm_boundbool2raw(mbounds[i], false));
                 pdbm_constrain1(result, ndim, i+dim-1, 0, dbm_boundbool2raw(mbounds[i], false));
@@ -313,7 +476,7 @@ pdbm_build_product(const pdbm_t &z1,
     // (the API computes the infimum rather than the supremum)
     for (int i = 1; i < dim; ++i)
     {
-        if (y.getBit(i) == ONE)
+        if (y.is_in(i))
         {
             pdbm_setRate(result, ndim, i, pdbm_getRate(z1, dim, i));
             pdbm_setRate(result, ndim, i+dim-1, - pdbm_getRate(z2, dim, i));
@@ -339,11 +502,29 @@ pdbm_square_inclusion_exp(const pdbm_t &z1, const pdbm_t &z2, const std::vector<
     if (! dbm_closure_leq(z1.const_dbm(), z2.const_dbm(), z1.getDimension(), mbounds, mbounds))
         return false;
 
+    // a cache for preorders on clocks
+    // TODO use dbm_t (and not pdbm_t) as key for the map
+    static std::unordered_map<pdbm_t, clock_po_t> order_cache;
+    clock_po_t preorder;
+    {
+        auto it = order_cache.find(z1);
+        if (it == order_cache.end())
+        {
+            // compute the preorder on clocks
+            preorder = build_clock_preorder(z1, mbounds);
+            // and store it
+            order_cache[z1] = preorder;
+        }
+        else
+        {
+            preorder = it->second;
+        }
+    }
+
     // get the dimension
     int dim = z1.getDimension();
-    // initialize bit vector to 0
-    base::BitString currentY(dim);
-    assert(currentY.isEmpty());
+    // initialize Y to emptyset
+    clock_po_iterator currentY(preorder, dim);
 
     // the main loop
     do
@@ -353,7 +534,7 @@ pdbm_square_inclusion_exp(const pdbm_t &z1, const pdbm_t &z2, const std::vector<
         bool zy1_not_empty = true;
         for (int i = 1; zy1_not_empty && i < dim; ++i)
         {
-            if (currentY.getBit(i) == ONE)
+            if (currentY.is_in(i))
             {
                 zy1_not_empty = pdbm_constrain1(zy1, dim, i, 0, dbm_boundbool2raw(mbounds[i], false));
             } else {
@@ -394,20 +575,9 @@ pdbm_square_inclusion_exp(const pdbm_t &z1, const pdbm_t &z2, const std::vector<
         }
 
         // go to next Y
-        for (int i = 1; i < dim; ++i)
-        {
-            if (currentY.getBit(i) == ONE)
-            {
-                currentY -= i;
-            }
-            else
-            {
-                currentY += i;
-                break;
-            }
-        }
+        currentY.next();
 
-    } while (! currentY.isEmpty());
+    } while (! currentY.done());
 
     return true;
 }
