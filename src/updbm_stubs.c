@@ -331,10 +331,14 @@ pdbm_build_product(const pdbm_t &z1,
 
 // check whether a priced zone dominates another
 // this is based on the exploration of all subsets of clocks
-// TODO better incremental construction of the Z_Y, typically with a Gros-Gray enumeration
 bool
 pdbm_square_inclusion_exp(const pdbm_t &z1, const pdbm_t &z2, const std::vector<int> &mbounds)
 {
+    // check whether all valuations in Z have an equivalent in Z'
+    // it is the same as testing the inclusion of Z in the closure of Z'
+    if (! dbm_closure_leq(z1.const_dbm(), z2.const_dbm(), z1.getDimension(), mbounds, mbounds))
+        return false;
+
     // get the dimension
     int dim = z1.getDimension();
     // initialize bit vector to 0
@@ -346,58 +350,22 @@ pdbm_square_inclusion_exp(const pdbm_t &z1, const pdbm_t &z2, const std::vector<
     {
         // first check whether Z_Y is empty
         pdbm_t zy1 = z1;
-        pdbm_t zy2 = z2;
         bool zy1_not_empty = true;
-        bool zy2_not_empty = true;
         for (int i = 1; zy1_not_empty && i < dim; ++i)
         {
             if (currentY.getBit(i) == ONE)
             {
                 zy1_not_empty = pdbm_constrain1(zy1, dim, i, 0, dbm_boundbool2raw(mbounds[i], false));
-                if (zy2_not_empty)
-                    zy2_not_empty = pdbm_constrain1(zy2, dim, i, 0, dbm_boundbool2raw(mbounds[i], false));
             } else {
                 zy1_not_empty = pdbm_constrain1(zy1, dim, 0, i, dbm_boundbool2raw(-mbounds[i], true));
-                if (zy2_not_empty)
-                    zy2_not_empty = pdbm_constrain1(zy2, dim, 0, i, dbm_boundbool2raw(-mbounds[i], true));
             }
         }
 
+        // TODO do not build zy1, build the product directly
+        //      zy1 empty iff the product is empty
+
         if (zy1_not_empty)
         {
-            if (! zy2_not_empty)
-                return false;
-
-            // check whether all elements of Z have an equivalent in Z'
-            // i.e. check whether Z_Y \subseteq Z_Y'
-            // if not, return early
-            int ydim = currentY.count() + 1;
-            // if ydim, it suffices to check (zy1 non-empty) implies (zy2 non-empty)
-            // this has been done above
-            if (ydim > 1)
-            {
-                dbm_t uz1;
-                uz1.copyFrom(zy1.const_dbm(), z1.getDimension());
-                dbm_t uz2;
-                uz2.copyFrom(zy2.const_dbm(), z2.getDimension());
-
-                cindex_t * target = new cindex_t[ydim];
-                target[0] = 0;
-                int j = 1;
-                for (int i = 1; i < dim; ++i)
-                {
-                    if (currentY.getBit(i) == ONE)
-                    {
-                        target[j++] = i;
-                    }
-                }
-                uz1.changeClocks(target, ydim);
-                uz2.changeClocks(target, ydim);
-                delete [] target;
-                if (! (uz1 <= uz2))
-                    return false;
-            }
-
             // build the product for the current Y
             pdbm_t prody = pdbm_build_product(z1, z2, mbounds, currentY);
 
