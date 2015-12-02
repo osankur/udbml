@@ -635,29 +635,35 @@ stub_dbm_satisfies(value t, value ct)
 	CAMLreturn(Val_bool(d->satisfies(i,j,r)));
 }
 
-extern "C" bool
-dbm_closure_leq(const dbm_t &d1, const dbm_t &d2,
+bool
+dbm_closure_leq(const raw_t * const dr1, const raw_t * const dr2, cindex_t dim,
                 const std::vector<int> &lbounds, const std::vector<int> &ubounds)
 {
-    // forall x,y
-    //      Z_{x,0} < (<=, -U_x)
-    // or   Z'_{x,y} + (<, -L_y) >= Z_{x,0}
-    // or   Z'_{x,y} >= Z_{x,y}
-    int dim = d1.getDimension();
-    const raw_t * dr1 = d1.const_dbm();
-    const raw_t * dr2 = d2.const_dbm();
-    int n = 0;
-    while (n < dim*dim-1) {
-        const raw_t & zx0 = dr1[n];
-        if (zx0 >= dbm_boundbool2raw(-ubounds[n/dim], false)) {
-            const raw_t & zpxy = dr2[n];
-            if (zpxy < dr1[n] && dbm_addRawRaw(zpxy, dbm_boundbool2raw(-lbounds[n % dim], true)) < zx0) {
+    // false iff
+    // exist x,y
+    //      Z_{0,x} >= (<=, -U_x)
+    // and  Z'_{y,x} + (<, -L_y) < Z_{0,x}
+    // and  Z'_{y,x} < Z_{y,x}
+    int x = 1;
+    int y = 1;
+    while (x < dim && y < dim) {
+        int n = y*dim+x;
+        const raw_t & z0x = dr1[x];
+        if (z0x >= dbm_boundbool2raw(-ubounds[x], false)) {
+            const raw_t & zpyx = dr2[n];
+            if ((zpyx < dr1[n]) && dbm_addRawRaw(zpyx, dbm_boundbool2raw(-lbounds[y], true)) < z0x) {
                 return false;
             } else {
-                ++n;
+                ++y;
+                if (y == dim)
+                {
+                    y = 1;
+                    ++x;
+                }
             }
         } else {
-            n = ((n/dim)+1)*dim;
+            ++x;
+            y = 1;
         }
     }
     return true;
@@ -668,9 +674,9 @@ stub_dbm_closure_leq(value vlbounds, value vubounds, value t1, value t2)
 {
     const dbm_t & d1 = *get_dbm_ptr(t1);
     const dbm_t & d2 = *get_dbm_ptr(t2);
-    int dim = d1.getDimension();
+    cindex_t dim = d1.getDimension();
     assert(dim == d2.getDimension());
-    return Val_bool(dbm_closure_leq(d1, d2, *get_cvector(vlbounds), *get_cvector(vubounds)));
+    return Val_bool(dbm_closure_leq(d1.const_dbm(), d2.const_dbm(), dim, *get_cvector(vlbounds), *get_cvector(vubounds)));
 }
 
 extern "C" CAMLprim value
