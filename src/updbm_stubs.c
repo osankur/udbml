@@ -504,9 +504,6 @@ build_clock_preorder(const pdbm_t &z, const std::vector<int> &mbounds)
 //   r'(x)      if x' is in Y'
 //   - r(x)     if x is in X-Y
 //   - r'(x)    if x' is in X'-Y'
-// TODO what about the constant term in zeta and zeta'??
-// TODO optimize by using only 2|X| - |Y| clocks
-//      beware that the rate for x in Y would then be r'(x) - r(x)
 pdbm_t
 pdbm_build_product(const pdbm_t &z1,
                    const pdbm_t &z2,
@@ -515,58 +512,48 @@ pdbm_build_product(const pdbm_t &z1,
 {
     assert(z1.getDimension() == z2.getDimension());
     int dim = z1.getDimension();
-    int ndim = 2*dim-1;
-    // create a new dbm of size 2*dim-1 (the reference clock need not be duplicated)
+    int ndim = 2*dim-1-y.count();
+    // create a new dbm of size ndim (the reference clock and those in Y need not be duplicated)
     pdbm_t result = pdbm_t(ndim);
     // initialize
     pdbm_init(result, ndim);
     // constrain it
-    // WARNING the reference clock is not duplicated
-    // TODO consider using pdbm_constrainN instead
-    for (int i = 0; i < dim; ++i)
+    // TODO     consider using pdbm_constrainN instead
+    //          or build the dbm as a matrix of raw_t and canonize once at the end
+    // WARNING  when building the corresponding cost function
+    //          negate the function, so that its infimum corresponds to the supremum we want
+    //          (the API computes the infimum rather than the supremum)
+    for (int i = 0, ki = dim; i < dim; ++i)
     {
+        int ii = (i && !y.is_in(i)) ? ki++ : i;
         if (i > 0)
         {
             // constrain it with x <= M for x in Y, x > M otherwise
             if (y.is_in(i))
             {
                 pdbm_constrain1(result, ndim, i, 0, dbm_boundbool2raw(mbounds[i], false));
-                pdbm_constrain1(result, ndim, i+dim-1, 0, dbm_boundbool2raw(mbounds[i], false));
 
-                // constrain it with x == x' for x in Y
-                pdbm_constrain1(result, ndim, i, i+dim-1, dbm_boundbool2raw(0, false));
-                pdbm_constrain1(result, ndim, i+dim-1, i, dbm_boundbool2raw(0, false));
+                // set rates
+                pdbm_setRate(result, ndim, i, pdbm_getRate(z1, dim, i) - pdbm_getRate(z2, dim, i));
             }
             else
             {
                 pdbm_constrain1(result, ndim, 0, i, dbm_boundbool2raw(-mbounds[i], true));
-                pdbm_constrain1(result, ndim, 0, i+dim-1, dbm_boundbool2raw(-mbounds[i], true));
+                pdbm_constrain1(result, ndim, 0, ii, dbm_boundbool2raw(-mbounds[i], true));
+
+                // set rates
+                pdbm_setRate(result, ndim, i, pdbm_getRate(z1, dim, i));
+                pdbm_setRate(result, ndim, ii, pdbm_getRate(z2, dim, i));
             }
         }
 
-        for (int j = 0; j < dim; ++j)
+        for (int j = 0, kj = dim; j < dim; ++j)
         {
+            int jj = (j && !y.is_in(j)) ? kj++ : j;
             // constrain from z1
             pdbm_constrain1(result, ndim, i, j, z1(i,j));
             // constrain from z2
-            pdbm_constrain1(result, ndim, i?i+dim-1:0, j?j+dim-1:0, z2(i,j));
-        }
-    }
-
-    // build the corresponding cost function
-    // negate the function, so that its infimum corresponds to the supremum we want
-    // (the API computes the infimum rather than the supremum)
-    for (int i = 1; i < dim; ++i)
-    {
-        if (y.is_in(i))
-        {
-            pdbm_setRate(result, ndim, i, pdbm_getRate(z1, dim, i));
-            pdbm_setRate(result, ndim, i+dim-1, - pdbm_getRate(z2, dim, i));
-        }
-        else
-        {
-            pdbm_setRate(result, ndim, i, pdbm_getRate(z1, dim, i));
-            pdbm_setRate(result, ndim, i+dim-1, pdbm_getRate(z2, dim, i));
+            pdbm_constrain1(result, ndim, ii, jj, z2(i,j));
         }
     }
 
@@ -644,10 +631,18 @@ pdbm_square_inclusion_exp(const pdbm_t &z1, const pdbm_t &z2, const std::vector<
 
             // use this valuation to evaluate the searched sup for the current Y
             // inf_val = (v0,v0') and local_sup = z2(v0') - z1(v0)
-            int32_t local_sup =   pdbm_getCostOfValuation(z2, dim, inf_val + dim - 1)
+            int32_t * v0p = new int32_t[dim];
+            v0p[0] = inf_val[0];
+            for (int i = 1, ki = dim; i < dim; ++i)
+            {
+                int ii = currentY.is_in(i) ? i : ki++;
+                v0p[i] = inf_val[ii];
+            }
+            int32_t local_sup =   pdbm_getCostOfValuation(z2, dim, v0p)
                                 - pdbm_getCostOfValuation(z1, dim, inf_val);
 
             // free
+            delete [] v0p;
             delete [] free_clocks;
             delete [] inf_val;
 
