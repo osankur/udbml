@@ -57,9 +57,11 @@ struct
   external update_value : t -> cindex_t -> bound_t -> unit = "stub_pfed_update_value";;
   external intersect_dbm : t -> Udbml_unpriced.Dbm.t -> unit = "stub_pfed_intersect_dbm" "noalloc";;
 
+  (* TODO should be hidden *)
   module Iterator =
   struct
     type t
+    
     external get : t -> PDbm.t = "stub_pfed_iterator_get";;
     external incr : t -> unit = "stub_pfed_iterator_incr";;
     external not_equal : t -> t -> bool = "stub_pfed_iterator_notequal";;
@@ -68,15 +70,28 @@ struct
     external insert : t -> PDbm.t -> unit = "stub_pfed_iterator_insert";;
 *)
   end
-  external begin_it : t -> Iterator.t = "stub_pfed_iterator_begin";;
-  external end_it : t -> Iterator.t = "stub_pfed_iterator_end";;
+
+  type iterator_t = t * Iterator.t
+
+  (* TODO should be hidden *)
+  external _begin_it : t -> Iterator.t = "stub_pfed_iterator_begin";;
+  external _end_it : t -> Iterator.t = "stub_pfed_iterator_end";;
+
+  let begin_it p = (p, _begin_it p)
+  let end_it p = (p, _end_it p)
+
+  let get_it (_,t) = Iterator.get t
+
+  let incr_it (_,t) = Iterator.incr t
+
+  let neq_it (a,t1) (a,t2) = Iterator.not_equal t1 t2
 
   let iter t f =
     let it = begin_it t in
     let ite = end_it t in
-    while (Iterator.not_equal it ite) do
-      f (Iterator.get it);
-      Iterator.incr it
+    while (neq_it it ite) do
+      f (get_it it);
+      incr_it it
     done
 
   let from_dbm a =
