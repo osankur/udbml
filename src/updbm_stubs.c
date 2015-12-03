@@ -267,11 +267,77 @@ stub_pdbm_geq(value v1, value v2)
     return Val_bool(false);
 }
 
-// TODO turn it into a class?
-typedef std::vector<std::vector<std::vector<int> > > clock_po_t;
+// a class that stores the preorder on clocks for a given zone
+class clock_po_t
+{
+    friend class clock_po_iterator;
+public:
+    explicit clock_po_t() {}
 
-// TODO consider using clocks that are always or never in Y
-//      because Z is included in x <= M(x) or in x > M(x) respectively
+    size_t
+    size() const
+    {
+        return _order.size();
+    }
+
+    const std::vector<std::vector<int> > &
+    operator[](int i) const
+    {
+        return _order[i];
+    }
+
+    void
+    push_back(const std::vector<std::vector<int>> &v)
+    {
+        _order.push_back(v);
+    }
+
+    void
+    push_back(std::vector<std::vector<int>> &&v)
+    {
+        _order.push_back(v);
+    }
+
+    void
+    add_below(int i)
+    {
+        _below.push_back(i);
+    }
+
+    void
+    add_above(int i)
+    {}
+
+    std::vector<std::vector<std::vector<int> > >::iterator
+    begin()
+    {
+        return _order.begin();
+    }
+
+    std::vector<std::vector<std::vector<int> > >::iterator
+    end()
+    {
+        return _order.begin();
+    }
+
+    std::vector<std::vector<std::vector<int> > >::const_iterator
+    begin() const
+    {
+        return _order.begin();
+    }
+
+    std::vector<std::vector<std::vector<int> > >::const_iterator
+    end() const
+    {
+        return _order.begin();
+    }
+
+private:
+    std::vector<int> _below;
+    // there is fact no need to store clocks that are above their bound
+    std::vector<std::vector<std::vector<int> > > _order;
+};
+
 class clock_po_iterator
 {
 public:
@@ -280,7 +346,13 @@ public:
     , _state(o.size())
     , _is_in(dim)
     , _size(0)
-    {}
+    {
+        for (auto &i : _order._below)
+        {
+            _is_in[i] = true;
+            ++_size;
+        }
+    }
 
     bool
     is_in(int i) const
@@ -294,7 +366,7 @@ public:
         return _size;
     }
 
-    bool done() const { return _size == 0; }
+    bool done() const { return _size == _order._below.size(); }
 
     void
     next()
@@ -363,9 +435,19 @@ build_clock_preorder(const pdbm_t &z, const std::vector<int> &mbounds)
     int dim = z.getDimension();
     // build the preorder on clocks wrt z
     clock_po_t result;
-    result.push_back(std::vector<std::vector<int> >(1, std::vector<int>(1,1)));
-    for (int i = 2; i < dim; ++i)
+    for (int i = 1; i < dim; ++i)
     {
+        if (z(i,0) <= dbm_boundbool2raw(mbounds[i], false))
+        {
+            result.add_below(i);
+            continue;
+        }
+        if (z(0,i) <= dbm_boundbool2raw(-mbounds[i], true))
+        {
+            result.add_above(i);
+            continue;
+        }
+
         bool to_insert = true;
         for (auto it = result.begin(); to_insert && it != result.end(); ++it)
         {
@@ -382,8 +464,8 @@ build_clock_preorder(const pdbm_t &z, const std::vector<int> &mbounds)
                     int j = (*it)[k][0];
                     bool i_preceq_j;
                     bool j_preceq_i;
-                    i_preceq_j = (z.const_dbm()[i*dim+j] <= dbm_boundbool2raw(mbounds[i] - mbounds[j], false));
-                    j_preceq_i = (z.const_dbm()[j*dim+i] <= dbm_boundbool2raw(mbounds[j] - mbounds[i], false));
+                    i_preceq_j = (z(i,j) <= dbm_boundbool2raw(mbounds[i] - mbounds[j], false));
+                    j_preceq_i = (z(j,i) <= dbm_boundbool2raw(mbounds[j] - mbounds[i], false));
 
                     if (i_preceq_j && j_preceq_i)
                     {
