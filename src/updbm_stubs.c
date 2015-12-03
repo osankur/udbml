@@ -619,32 +619,43 @@ pdbm_square_inclusion_exp(const pdbm_t &z1, const pdbm_t &z2, const std::vector<
             // build the product for the current Y
             pdbm_t prody = pdbm_build_product(z1, z2, mbounds, currentY);
 
-            // get the valuation where the infimum of the product zone is reached
-            int32_t * inf_val = new int32_t[prody.getDimension()];
-            // TODO do not build this array every time, make it static somehow
-            bool * free_clocks = new bool[prody.getDimension()];
-            for (int i = 0; i < prody.getDimension(); ++i)
+            // to avoid reallocating again and again arrays to store the infimum valuation
+            static std::unordered_map<int, std::pair<bool*, int32_t*>> array_cache;
+            auto cacheit = array_cache.find(dim);
+            bool * free_clocks;
+            int32_t * inf_val;
+            if (cacheit == array_cache.end())
             {
-                free_clocks[i] = true;
+                // size 2*dim-1 fits all Y (the API require arrays of size at least the dimension
+                // of the product, which is at most 2*dim-1)
+                inf_val = new int32_t[2*dim-1];
+                free_clocks = new bool[2*dim-1];
+                for (int i = 0; i < 2*dim-1; ++i)
+                {
+                    free_clocks[i] = true;
+                }
+                array_cache[dim] = std::make_pair(free_clocks, inf_val);
+            }
+            else
+            {
+                free_clocks = cacheit->second.first;
+                inf_val = cacheit->second.second;
             }
             pdbm_getInfimumValuation(prody, prody.getDimension(), inf_val, free_clocks);
 
             // use this valuation to evaluate the searched sup for the current Y
             // inf_val = (v0,v0') and local_sup = z2(v0') - z1(v0)
-            int32_t * v0p = new int32_t[dim];
-            v0p[0] = inf_val[0];
+            int32_t local_sup = - pdbm_getCostOfValuation(z1, dim, inf_val);
+            // reuse inf_val for v0', to avoid allocating yet another vector
             for (int i = 1, ki = dim; i < dim; ++i)
             {
-                int ii = currentY.is_in(i) ? i : ki++;
-                v0p[i] = inf_val[ii];
+                if (! currentY.is_in(i))
+                {
+                    inf_val[i] = inf_val[ki];
+                    ++ki;
+                }
             }
-            int32_t local_sup =   pdbm_getCostOfValuation(z2, dim, v0p)
-                                - pdbm_getCostOfValuation(z1, dim, inf_val);
-
-            // free
-            delete [] v0p;
-            delete [] free_clocks;
-            delete [] inf_val;
+            local_sup += pdbm_getCostOfValuation(z2, dim, inf_val);
 
             // if positive, return early
             if (local_sup > 0)
