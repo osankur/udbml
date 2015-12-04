@@ -522,7 +522,6 @@ pdbm_build_product(const pdbm_t &z1,
     //          (the API computes the infimum rather than the supremum)
     for (int i = 1, ki = dim; i < dim; ++i)
     {
-        int ii = y.is_in(i) ? i : ki++;
         if (y.is_in(i))
         {
             pdbm_setRate(result, ndim, i, pdbm_getRate(z1, dim, i) - pdbm_getRate(z2, dim, i));
@@ -530,7 +529,8 @@ pdbm_build_product(const pdbm_t &z1,
         else
         {
             pdbm_setRate(result, ndim, i, pdbm_getRate(z1, dim, i));
-            pdbm_setRate(result, ndim, ii, pdbm_getRate(z2, dim, i));
+            pdbm_setRate(result, ndim, ki, pdbm_getRate(z2, dim, i));
+            ++ki;
         }
     }
 
@@ -564,15 +564,15 @@ pdbm_square_inclusion_exp(const pdbm_t &z1, const pdbm_t &z2, const std::vector<
     do
     {
         // first check whether Z_Y is empty
-        pdbm_t zy1 = z1;
+        dbm_t zy1(z1.const_dbm(), dim);
         bool zy1_not_empty = true;
         for (int i = 1; zy1_not_empty && i < dim; ++i)
         {
             if (currentY.is_in(i))
             {
-                zy1_not_empty = pdbm_constrain1(zy1, dim, i, 0, dbm_boundbool2raw(mbounds[i], false));
+                zy1_not_empty = zy1.constrain(i, 0, dbm_boundbool2raw(mbounds[i], false));
             } else {
-                zy1_not_empty = pdbm_constrain1(zy1, dim, 0, i, dbm_boundbool2raw(-mbounds[i], true));
+                zy1_not_empty = zy1.constrain(0, i, dbm_boundbool2raw(-mbounds[i], true));
             }
         }
 
