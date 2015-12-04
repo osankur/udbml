@@ -517,12 +517,15 @@ pdbm_build_product(const pdbm_t &z1,
     pdbm_t result = pdbm_t(ndim);
     // initialize
     pdbm_init(result, ndim);
+
     // constrain it
-    // TODO     consider using pdbm_constrainN instead
-    //          or build the dbm as a matrix of raw_t and canonize once at the end
-    // WARNING  when building the corresponding cost function
-    //          negate the function, so that its infimum corresponds to the supremum we want
-    //          (the API computes the infimum rather than the supremum)
+    // Get the inner matrix of the priced DBM. The matrix can be
+    // modified as long as \c pdbm_close() is called before any other
+    // operations are performed on the priced DBM.
+    // We should call pdbm_close before setting the rates...
+    raw_t * rmatrix = pdbm_getMutableMatrix(result, ndim);
+    // recall: result[i,j] = rmatrix[i*ndim + j]
+
     for (int i = 0, ki = dim; i < dim; ++i)
     {
         int ii = (i && !y.is_in(i)) ? ki++ : i;
@@ -531,19 +534,12 @@ pdbm_build_product(const pdbm_t &z1,
             // constrain it with x <= M for x in Y, x > M otherwise
             if (y.is_in(i))
             {
-                pdbm_constrain1(result, ndim, i, 0, dbm_boundbool2raw(mbounds[i], false));
-
-                // set rates
-                pdbm_setRate(result, ndim, i, pdbm_getRate(z1, dim, i) - pdbm_getRate(z2, dim, i));
+                rmatrix[i*ndim] = dbm_boundbool2raw(mbounds[i], false);
             }
             else
             {
-                pdbm_constrain1(result, ndim, 0, i, dbm_boundbool2raw(-mbounds[i], true));
-                pdbm_constrain1(result, ndim, 0, ii, dbm_boundbool2raw(-mbounds[i], true));
-
-                // set rates
-                pdbm_setRate(result, ndim, i, pdbm_getRate(z1, dim, i));
-                pdbm_setRate(result, ndim, ii, pdbm_getRate(z2, dim, i));
+                rmatrix[i] = dbm_boundbool2raw(-mbounds[i], true);
+                rmatrix[ii] = dbm_boundbool2raw(-mbounds[i], true);
             }
         }
 
@@ -551,9 +547,28 @@ pdbm_build_product(const pdbm_t &z1,
         {
             int jj = (j && !y.is_in(j)) ? kj++ : j;
             // constrain from z1
-            pdbm_constrain1(result, ndim, i, j, z1(i,j));
+            rmatrix[i*ndim+j] = z1(i,j);
             // constrain from z2
-            pdbm_constrain1(result, ndim, ii, jj, z2(i,j));
+            rmatrix[ii*ndim+jj] = z2(i,j);
+        }
+    }
+    pdbm_close(result, ndim);
+
+    // set the rates
+    // WARNING  when building the corresponding cost function
+    //          negate the function, so that its infimum corresponds to the supremum we want
+    //          (the API computes the infimum rather than the supremum)
+    for (int i = 1, ki = dim; i < dim; ++i)
+    {
+        int ii = y.is_in(i) ? i : ki++;
+        if (y.is_in(i))
+        {
+            pdbm_setRate(result, ndim, i, pdbm_getRate(z1, dim, i) - pdbm_getRate(z2, dim, i));
+        }
+        else
+        {
+            pdbm_setRate(result, ndim, i, pdbm_getRate(z1, dim, i));
+            pdbm_setRate(result, ndim, ii, pdbm_getRate(z2, dim, i));
         }
     }
 
