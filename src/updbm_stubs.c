@@ -272,7 +272,72 @@ class clock_po_t
 {
     friend class clock_po_iterator;
 public:
-    explicit clock_po_t() {}
+    // build the preorder on clocks wrt z
+    explicit clock_po_t(const pdbm_t &z, const std::vector<int> &mbounds)
+    {
+        int dim = z.getDimension();
+
+        for (int i = 1; i < dim; ++i)
+        {
+            if (z(i,0) <= dbm_boundbool2raw(mbounds[i], false))
+            {
+                _below.push_back(i);
+                continue;
+            }
+            if (z(0,i) <= dbm_boundbool2raw(-mbounds[i], true))
+            {
+                // nothing to do, as clocks above their bound are not stored
+                continue;
+            }
+
+            bool to_insert = true;
+            for (auto it = _order.begin(); to_insert && it != _order.end(); ++it)
+            {
+                int k = 0;
+                while (to_insert)
+                {
+                    if (k == it->size())
+                    {
+                        it->insert(it->begin()+k, std::vector<int>(1,i));
+                        to_insert = false;
+                    }
+                    else
+                    {
+                        int j = (*it)[k][0];
+                        bool i_preceq_j;
+                        bool j_preceq_i;
+                        i_preceq_j = (z(i,j) <= dbm_boundbool2raw(mbounds[i] - mbounds[j], false));
+                        j_preceq_i = (z(j,i) <= dbm_boundbool2raw(mbounds[j] - mbounds[i], false));
+
+                        if (i_preceq_j && j_preceq_i)
+                        {
+                            (*it)[k].push_back(i);
+                            to_insert = false;
+                        }
+                        else if (i_preceq_j)
+                        {
+                            it->insert(it->begin()+k, std::vector<int>(1,i));
+                            to_insert = false;
+                        }
+                        else if (j_preceq_i)
+                        {
+                            ++k;
+                        }
+                        else
+                        {
+                            break;
+                        }
+                    }
+                }
+                
+            }
+            
+            if (to_insert)
+            {
+                _order.push_back(std::vector<std::vector<int> >(1, std::vector<int>(1,i)));
+            }
+        }
+    }
 
     size_t
     size() const
@@ -284,40 +349,6 @@ public:
     operator[](int i) const
     {
         return _order[i];
-    }
-
-    void
-    push_back(const std::vector<std::vector<int>> &v)
-    {
-        _order.push_back(v);
-    }
-
-    void
-    push_back(std::vector<std::vector<int>> &&v)
-    {
-        _order.push_back(v);
-    }
-
-    void
-    add_below(int i)
-    {
-        _below.push_back(i);
-    }
-
-    void
-    add_above(int i)
-    {}
-
-    std::vector<std::vector<std::vector<int> > >::iterator
-    begin()
-    {
-        return _order.begin();
-    }
-
-    std::vector<std::vector<std::vector<int> > >::iterator
-    end()
-    {
-        return _order.begin();
     }
 
     std::vector<std::vector<std::vector<int> > >::const_iterator
@@ -429,75 +460,6 @@ private:
     cindex_t _size; // the size of the current subset
 };
 
-clock_po_t
-build_clock_preorder(const pdbm_t &z, const std::vector<int> &mbounds)
-{
-    int dim = z.getDimension();
-    // build the preorder on clocks wrt z
-    clock_po_t result;
-    for (int i = 1; i < dim; ++i)
-    {
-        if (z(i,0) <= dbm_boundbool2raw(mbounds[i], false))
-        {
-            result.add_below(i);
-            continue;
-        }
-        if (z(0,i) <= dbm_boundbool2raw(-mbounds[i], true))
-        {
-            result.add_above(i);
-            continue;
-        }
-
-        bool to_insert = true;
-        for (auto it = result.begin(); to_insert && it != result.end(); ++it)
-        {
-            int k = 0;
-            while (to_insert)
-            {
-                if (k == it->size())
-                {
-                    it->insert(it->begin()+k, std::vector<int>(1,i));
-                    to_insert = false;
-                }
-                else
-                {
-                    int j = (*it)[k][0];
-                    bool i_preceq_j;
-                    bool j_preceq_i;
-                    i_preceq_j = (z(i,j) <= dbm_boundbool2raw(mbounds[i] - mbounds[j], false));
-                    j_preceq_i = (z(j,i) <= dbm_boundbool2raw(mbounds[j] - mbounds[i], false));
-
-                    if (i_preceq_j && j_preceq_i)
-                    {
-                        (*it)[k].push_back(i);
-                        to_insert = false;
-                    }
-                    else if (i_preceq_j)
-                    {
-                        it->insert(it->begin()+k, std::vector<int>(1,i));
-                        to_insert = false;
-                    }
-                    else if (j_preceq_i)
-                    {
-                        ++k;
-                    }
-                    else
-                    {
-                        break;
-                    }
-                }
-            }
-
-        }
-
-        if (to_insert)
-        {
-            result.push_back(std::vector<std::vector<int> >(1, std::vector<int>(1,i)));
-        }
-    }
-    return result;
-}
-
 // a function that builds the product priced zone for a given subset of clocks Y
 // the corresponding function has rates
 //   - r(x)     if x is in Y
@@ -589,21 +551,9 @@ pdbm_square_inclusion_exp(const pdbm_t &z1, const pdbm_t &z2, const std::vector<
     // a cache for preorders on clocks
     // TODO use dbm_t (and not pdbm_t) as key for the map
     static std::unordered_map<pdbm_t, clock_po_t> order_cache;
-    clock_po_t preorder;
-    {
-        auto it = order_cache.find(z1);
-        if (it == order_cache.end())
-        {
-            // compute the preorder on clocks
-            preorder = build_clock_preorder(z1, mbounds);
-            // and store it
-            order_cache[z1] = preorder;
-        }
-        else
-        {
-            preorder = it->second;
-        }
-    }
+    clock_po_t preorder = order_cache.emplace(std::piecewise_construct,
+                                              std::make_tuple(z1),
+                                              std::make_tuple(z1, mbounds)).first->second;
 
     // get the dimension
     int dim = z1.getDimension();
