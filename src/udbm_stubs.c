@@ -644,27 +644,26 @@ dbm_closure_leq(const raw_t * const dr1, const raw_t * const dr2, cindex_t dim,
     //      Z_{0,x} >= (<=, -U_x)
     // and  Z'_{y,x} + (<, -L_y) < Z_{0,x}
     // and  Z'_{y,x} < Z_{y,x}
-    int x = 1;
-    int y = 1;
-    while (x < dim && y < dim) {
-        int n = y*dim+x;
+    int x = dim-1;
+    while (x > 0) {
         const raw_t & z0x = dr1[x];
         if (z0x >= dbm_boundbool2raw(-ubounds[x], false)) {
-            const raw_t & zpyx = dr2[n];
-            if ((zpyx < dr1[n]) && dbm_addRawRaw(zpyx, dbm_boundbool2raw(-lbounds[y], true)) < z0x) {
-                return false;
-            } else {
-                ++y;
-                if (y == dim)
-                {
-                    y = 1;
-                    ++x;
+            int y = dim-1;
+            int n = dim*y+x; // invariant n == y*dim+x
+            int32_t vz0x = dbm_raw2bound(z0x);
+            while (y > 0)
+            {
+                const raw_t & zpyx = dr2[n];
+                // NB: Z'_{y,x} + (<, -L_y) < Z_{0,x} iff value(Z'_{y,x}) - L_y <= value(Z_{0,x})
+                if ((zpyx < dr1[n]) && ((dbm_raw2bound(zpyx) - lbounds[y]) <= vz0x)) {
+                    return false;
+                } else {
+                    --y;
+                    n -= dim;
                 }
             }
-        } else {
-            ++x;
-            y = 1;
         }
+        --x;
     }
     return true;
 }
