@@ -750,24 +750,27 @@ stub_pfed_intersect_dbm(value v, value d)
 extern "C" CAMLprim value
 stub_pfed_hash(value v)
 {
-    CAMLparam1(v);
-    CAMLreturn(Val_long(get_pfed_ptr(v)->hash(0)));
+    return Val_long(get_pfed_ptr(v)->hash(0));
+}
+
+extern "C" CAMLprim value
+stub_pfed_is_empty(value v)
+{
+    return Val_bool(get_pfed_ptr(v)->isEmpty());
 }
 
 extern "C" CAMLprim value
 stub_pfed_up(value v)
 {
-    CAMLparam1(v);
     get_pfed_ptr(v)->up(1);
-    CAMLreturn(Val_unit);
+    return Val_unit;
 }
 
 extern "C" CAMLprim value
 stub_pfed_update_value(value t, value c, value b)
 {
-    CAMLparam3(t,c,b);
     get_pfed_ptr(t)->updateValue(Int_val(c), Int_val(b));
-    CAMLreturn(Val_unit);
+    return Val_unit;
 }
 
 extern "C" CAMLprim value
@@ -783,19 +786,17 @@ stub_pfed_iterator_get(value v)
 extern "C" CAMLprim value
 stub_pfed_iterator_notequal(value v1, value v2)
 {
-    CAMLparam2(v1, v2);
     const pfed_it_wrap_t & i1 = *get_pfed_it_ptr(v1);
     const pfed_it_wrap_t & i2 = *get_pfed_it_ptr(v2);
-    CAMLreturn(Val_bool(i1 != i2));
+    return Val_bool(i1 != i2);
 }
 
 extern "C" CAMLprim value
 stub_pfed_iterator_incr(value v)
 {
-    CAMLparam1(v);
     pfed_it_wrap_t & i = *get_pfed_it_ptr(v);
     ++i;
-    CAMLreturn(Val_unit);
+    return Val_unit;
 }
 
 extern "C" CAMLprim value

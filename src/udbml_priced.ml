@@ -48,13 +48,13 @@ struct
   include Udbml.Basic_types
 
   external create : int -> t = "stub_pfed_create";;
-  external hash : t -> int = "stub_pfed_hash";;
+  external hash : t -> int = "stub_pfed_hash" "noalloc";;
 
-  external is_empty : t -> bool = "stub_fed_is_empty";;
+  external is_empty : t -> bool = "stub_pfed_is_empty" "noalloc";;
   external add_dbm : t -> PDbm.t -> unit = "stub_pfed_add_dbm" "noalloc";;
 
-  external up : t -> unit = "stub_pfed_up";;
-  external update_value : t -> cindex_t -> bound_t -> unit = "stub_pfed_update_value";;
+  external up : t -> unit = "stub_pfed_up" "noalloc";;
+  external update_value : t -> cindex_t -> bound_t -> unit = "stub_pfed_update_value" "noalloc";;
   external intersect_dbm : t -> Udbml_unpriced.Dbm.t -> unit = "stub_pfed_intersect_dbm" "noalloc";;
 
   (* TODO should be hidden *)
@@ -63,8 +63,8 @@ struct
     type t
     
     external get : t -> PDbm.t = "stub_pfed_iterator_get";;
-    external incr : t -> unit = "stub_pfed_iterator_incr";;
-    external not_equal : t -> t -> bool = "stub_pfed_iterator_notequal";;
+    external incr : t -> unit = "stub_pfed_iterator_incr" "noalloc";;
+    external not_equal : t -> t -> bool = "stub_pfed_iterator_notequal" "noalloc";;
 (*
     external remove : t -> unit = "stub_pfed_iterator_remove";;
     external insert : t -> PDbm.t -> unit = "stub_pfed_iterator_insert";;
