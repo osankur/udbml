@@ -813,6 +813,15 @@ stub_fed_is_empty(value t)
 }
 
 extern "C" CAMLprim value
+stub_fed_set_empty(value t)
+{
+    CAMLparam1(t);
+    fed_t * f = get_fed_ptr(t);
+    f->setEmpty();
+    CAMLreturn(Val_unit);
+}
+
+extern "C" CAMLprim value
 stub_fed_has_zero(value t)
 {
 	CAMLparam1(t);

@@ -139,6 +139,7 @@ struct
   external dimension : t -> int = "stub_fed_dimension";;
   external intern : t -> unit = "stub_fed_intern";;
   external is_empty : t -> bool = "stub_fed_is_empty" "noalloc";;
+  external set_empty : t -> unit = "stub_fed_set_empty";;
   external has_zero : t -> bool = "stub_fed_has_zero";;
   external hash : t -> int = "stub_fed_hash";;
   external set_init : t -> unit = "stub_fed_set_init";;

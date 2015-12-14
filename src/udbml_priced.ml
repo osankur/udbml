@@ -51,6 +51,7 @@ struct
   external hash : t -> int = "stub_pfed_hash" "noalloc";;
 
   external is_empty : t -> bool = "stub_pfed_is_empty" "noalloc";;
+  external set_empty : t -> unit = "stub_pfed_set_empty";;
   external add_dbm : t -> PDbm.t -> unit = "stub_pfed_add_dbm" "noalloc";;
 
   external up : t -> unit = "stub_pfed_up" "noalloc";;

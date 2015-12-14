@@ -760,6 +760,15 @@ stub_pfed_is_empty(value v)
 }
 
 extern "C" CAMLprim value
+stub_pfed_set_empty(value t)
+{
+    CAMLparam1(t);
+    pfed_t * f = get_pfed_ptr(t);
+    f->setEmpty();
+    CAMLreturn(Val_unit);
+}
+
+extern "C" CAMLprim value
 stub_pfed_up(value v)
 {
     get_pfed_ptr(v)->up(1);
