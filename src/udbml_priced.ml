@@ -87,13 +87,7 @@ struct
 
   let neq_it (a,t1) (a,t2) = Iterator.not_equal t1 t2
 
-  let iter t f =
-    let it = begin_it t in
-    let ite = end_it t in
-    while (neq_it it ite) do
-      f (get_it it);
-      incr_it it
-    done
+  external iter : t -> (PDbm.t -> unit) -> unit = "stub_pfed_iterate";;
 
   let from_dbm a =
     let f = create (PDbm.dimension a) in

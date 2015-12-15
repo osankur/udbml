@@ -783,6 +783,30 @@ stub_pfed_update_value(value t, value c, value b)
 }
 
 extern "C" CAMLprim value
+stub_pfed_iterate(value t, value f)
+{
+    CAMLparam2(t,f);
+    CAMLlocal1(z);
+
+    // initialize z
+    z = caml_alloc_custom(&custom_ops_pdbm, sizeof(pdbm_wrap_t), 0, 1);
+    new (Data_custom_val(z)) pdbm_wrap_t();
+
+    for (pfed_t::iterator it = get_pfed_ptr(t)->beginMutable(); it != get_pfed_ptr(t)->endMutable(); ++it)
+    {
+        // reuse z, to avoid repeated allocation
+        get_pdbm_ptr(z)->~pdbm_t();
+        new (Data_custom_val(z)) pdbm_wrap_t(*it);
+        // callback
+        caml_callback(f, z);
+        // in case f has changed the value of z, update it with the new value of z
+        *it = *get_pdbm_ptr(z);
+    }
+
+    CAMLreturn(Val_unit);
+}
+
+extern "C" CAMLprim value
 stub_pfed_iterator_get(value v)
 {
     CAMLparam1(v);
