@@ -46,6 +46,7 @@ struct
   external dimension : t -> int = "stub_dbm_dimension" "noalloc";;
   external copy : t -> t = "stub_dbm_copy";;
   external is_empty : t -> bool = "stub_dbm_is_empty";;
+  external set_empty : t -> unit = "stub_dbm_set_empty";;
   external has_zero : t -> bool = "stub_dbm_has_zero";;
   external hash : t -> int = "stub_dbm_hash";;
   external intern : t -> unit = "stub_dbm_intern";;
@@ -173,6 +174,7 @@ struct
   external union : t -> t -> unit = "stub_fed_union";;
   external add : t -> t -> unit = "stub_fed_add";;
   external add_dbm : t -> Dbm.t -> unit = "stub_fed_add_dbm";;
+  external has : t -> Dbm.t -> bool = "stub_fed_has";;
   external append : t -> t -> unit = "stub_fed_append";;
   external append_end : t -> t -> unit = "stub_fed_append_end";;
   external append_begin : t -> t -> unit = "stub_fed_append_begin";;

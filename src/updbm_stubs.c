@@ -173,6 +173,15 @@ stub_pdbm_is_empty(value v)
 }
 
 extern "C" CAMLprim value
+stub_pdbm_set_empty(value v)
+{
+    CAMLparam1(v);
+    get_pdbm_ptr(v)->~pdbm_t();
+    new (Data_custom_val(v)) pdbm_wrap_t();
+    CAMLreturn(Val_unit);
+}
+
+extern "C" CAMLprim value
 stub_pdbm_is_unbounded(value v)
 {
     pdbm_wrap_t * pdbm = get_pdbm_ptr(v);
@@ -705,6 +714,23 @@ stub_pfed_add_dbm(value v, value d)
     const pdbm_t & dbm = *get_pdbm_ptr(d);
     fed |= dbm;
     return Val_unit;
+}
+
+extern "C" CAMLprim value
+stub_pfed_has(value t, value z)
+{
+    CAMLparam2(t, z);
+    bool res = false;
+    for (pfed_t::const_iterator it = get_pfed_ptr(t)->begin();
+         it != get_pfed_ptr(t)->end(); ++it)
+    {
+        if (*it == *get_pdbm_ptr(z))
+        {
+            res = true;
+            break;
+        }
+    }
+    CAMLreturn(Val_bool(res));
 }
 
 // returns true iff d is non-empty afterwards

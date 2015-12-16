@@ -13,6 +13,7 @@ struct
   external dimension : t -> int = "stub_pdbm_dimension" "noalloc";;
   external copy : t -> t = "stub_pdbm_copy";;
   external is_empty : t -> bool = "stub_pdbm_is_empty" "noalloc";;
+  external set_empty : t -> unit = "stub_pdbm_set_empty";;
   external hash : t -> int = "stub_pdbm_hash" "noalloc";;
   external at : t -> int -> int -> raw_t = "stub_pdbm_at";;
   external at_bound : t -> int -> int -> int = "stub_pdbm_at_bound" "noalloc";;
@@ -53,6 +54,7 @@ struct
   external is_empty : t -> bool = "stub_pfed_is_empty" "noalloc";;
   external set_empty : t -> unit = "stub_pfed_set_empty";;
   external add_dbm : t -> PDbm.t -> unit = "stub_pfed_add_dbm" "noalloc";;
+  external has : t -> PDbm.t -> bool = "stub_pfed_has";;
 
   external up : t -> unit = "stub_pfed_up" "noalloc";;
   external update_value : t -> cindex_t -> bound_t -> unit = "stub_pfed_update_value" "noalloc";;

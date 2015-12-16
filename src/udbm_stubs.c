@@ -295,6 +295,14 @@ stub_dbm_is_empty(value t)
 }
 
 extern "C" CAMLprim value
+stub_dbm_set_empty(value t)
+{
+    CAMLparam1(t);
+    get_dbm_ptr(t)->setEmpty();
+    CAMLreturn(Val_unit);
+}
+
+extern "C" CAMLprim value
 stub_dbm_has_zero(value t)
 {
 	CAMLparam1(t);
@@ -1056,6 +1064,13 @@ stub_fed_add_dbm(value t, value u)
 	CAMLreturn(Val_unit);
 }
 
+extern "C" CAMLprim value
+stub_fed_has(value t, value z)
+{
+    CAMLparam2(t, z);
+    bool res = get_fed_ptr(t)->hasSame(*get_dbm_ptr(z));
+    CAMLreturn(Val_bool(res));
+}
 
 extern "C" CAMLprim value
 stub_fed_append(value t, value u)
