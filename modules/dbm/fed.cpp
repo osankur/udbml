@@ -31,8 +31,8 @@
 //
 ///////////////////////////////////////////////////////////////////
 
+#include <algorithm>
 #include <math.h>
-#include <boost/bind.hpp>
 
 #include "base/slist.h"
 #include "base/bitstring.h"
@@ -2515,7 +2515,7 @@ namespace dbm
                     }
                     if (subset) // fi <= fj -> remove fi, put back removedj, reloop
                     {
-                        CERR(GREEN(THIN)"X"NORMAL);
+                        CERR(GREEN(THIN) "X" NORMAL);
                         *fi = (*fi)->removeAndNext();
                         ifedPtr->decSize();
                         ifedPtr->stealFromToEnd(fi, *removedj.ifedPtr);
@@ -2523,7 +2523,7 @@ namespace dbm
                     }
                     else if (superset) // fi >= fj -> remove fj, continue
                     {
-                        CERR(GREEN(THIN)"x"NORMAL);
+                        CERR(GREEN(THIN) "x" NORMAL);
                         *fj = (*fj)->removeAndNext();
                         ifedPtr->decSize();
                     }
@@ -2535,7 +2535,7 @@ namespace dbm
                         if (((fed_t(tryMerge) -= dbmi) -= dbmj).isEmpty())
                         {
                             // if success, update fi, remove fj, reloop
-                            CERR(MAGENTA(THIN)"m"NORMAL);
+                            CERR(MAGENTA(THIN) "m" NORMAL);
                             (*fi)->dbmt().updateCopy(tryMerge);
                             *fj = (*fj)->removeAndNext();
                             ifedPtr->decSize();
@@ -2551,7 +2551,7 @@ namespace dbm
                     else if (compatible)
                     {
                     OnlyCompatible:
-                        CERR(YELLOW(THIN)"+"NORMAL);
+                        CERR(YELLOW(THIN) "+" NORMAL);
                         convexi += dbmj;
                         removedj.ifedPtr->steal(fj, *ifedPtr);
                     }
@@ -2572,7 +2572,7 @@ namespace dbm
                         //if (dbmj <= convexi)
                         if (dbm_isSubsetEq(dbmj.const_dbm(), convexi.const_dbm(), dim))
                         {
-                            CERR(YELLOW(BOLD)"+"NORMAL);
+                            CERR(YELLOW(BOLD) "+" NORMAL);
                             removedj.ifedPtr->steal(fj, *ifedPtr);
                         }
                         else
@@ -2585,7 +2585,7 @@ namespace dbm
                     (tooMuch -= dbmi) -= removedj.mergeReduce();
                     if (tooMuch.isEmpty())
                     {
-                        CERR(CYAN(BOLD)"C("<<removedj.size()<<")"NORMAL);
+                        CERR(CYAN(BOLD) "C(" <<removedj.size()<< ")" NORMAL);
                         // Replace fi by convexi
                         (*fi)->dbmt().updateCopy(convexi);
                         if (size() == 1) break;
@@ -2600,7 +2600,7 @@ namespace dbm
                         assert(dbmi.le(newFed));
                         if (newFed.size() <= removedj.size()) // <= because dbmi not in removedj
                         {
-                            CERR(GREEN(BOLD)"R("<<(1+removedj.size()-newFed.size())<<")"NORMAL);
+                            CERR(GREEN(BOLD) "R(" <<(1+removedj.size()-newFed.size())<< ")" NORMAL);
                             *fi = (*fi)->removeAndNext(); // remove fi since inside newFed
                             ifedPtr->decSize();
                             ifedPtr->stealFromToEnd(fi, *newFed.ifedPtr);
@@ -2611,14 +2611,14 @@ namespace dbm
                         // Try expensiveReduce on removedj
                         if (removedj.add(dbmi).expensiveReduce().ifedPtr->const_head()->const_dbmt().sameAs(dbmi))
                         {
-                            CERR(RED(THIN)"B("<<(newFed.size()-1-removedj.size())<<")"NORMAL);
+                            CERR(RED(THIN) "B(" <<(newFed.size()-1-removedj.size())<< ")" NORMAL);
                             // dbmi still there, but in fi too
                             removedj.ifedPtr->removeHead();
                             fi = (*fi)->getNextMutable();
                         }
                         else
                         {
-                            CERR(MAGENTA(THIN)"R"NORMAL);
+                            CERR(MAGENTA(THIN) "R" NORMAL);
                             // dbmi was reduced, don't need in fi
                             *fi = (*fi)->removeAndNext();
                             ifedPtr->decSize();
@@ -2628,7 +2628,7 @@ namespace dbm
                         goto next_fi;
                         
 #else
-                        CERR(RED(THIN)"B("<<(newFed.size()-1-removedj.size())<<")"NORMAL);
+                        CERR(RED(THIN) "B(" <<(newFed.size()-1-removedj.size())<< ")" NORMAL);
                         // Put back removedj to end (don't mess-up loop on fi).
                         ifedPtr->stealFromToEnd(fi, *removedj.ifedPtr);
 #endif
@@ -2674,12 +2674,12 @@ namespace dbm
             if (newFed.size() < 3*(excess.size() + size()) && // another heuristic :)
                 newFed.mergeReduce().size() < size())
             {
-                CERR(GREEN(BOLD)"["<<(size()-newFed.size())<<"]"NORMAL);
+                CERR(GREEN(BOLD) "[" <<(size()-newFed.size())<< "]" NORMAL);
                 ifedPtr->swap(*newFed.ifedPtr); // win
             }
             else // lose
             {
-                CERR(RED(BOLD)"["<<(newFed.size()-size())<<"]"NORMAL);
+                CERR(RED(BOLD) "[" <<(newFed.size()-size())<< "]" NORMAL);
             }
         }
         return *this;
@@ -3096,20 +3096,34 @@ namespace dbm
         }
     }
 
-    // Helper function for std::transform.
-    static inline
-    constraint_t sat_collect(const fdbm_t *f, const constraint_t& c)
+    // Helper struct for std::transform.
+    struct sat_collect
     {
-        return (f->const_dbmt().satisfies(c) ? c : !c);
-    }
+        explicit sat_collect(const fdbm_t *f): _f(f) {}
 
-    // Helper function for std::for_each.
-    static inline
-    void sat_assert(fdbm_t *f, const constraint_t& c)
+        inline
+        constraint_t operator()(const constraint_t& c) const
+        {
+            return (_f->const_dbmt().satisfies(c) ? c : !c);
+        }
+
+        const fdbm_t *_f;
+    };
+
+    // Helper struct for std::for_each.
+    struct sat_assert
     {
-        DODEBUG(bool check =) f->dbmt().constrain(c);
-        assert(check);
-    }
+        explicit sat_assert(fdbm_t *f): _f(f) {}
+
+        inline
+        void operator()(const constraint_t& c) const
+        {
+            DODEBUG(bool check=) _f->dbmt().constrain(c);
+            assert(check);
+        }
+
+        fdbm_t *_f;
+    };
 
     void fed_t::splitExtrapolate(const constraint_t *begin, const constraint_t *end,
                                  const int32_t *max)
@@ -3155,11 +3169,11 @@ namespace dbm
         {
             // a)
             std::slist<constraint_t> sat;
-            transform(begin, end, front_inserter(sat), bind(sat_collect, fi, _1));
+            transform(begin, end, front_inserter(sat), sat_collect(fi));
             // b)
             fi->dbmt().extrapolateMaxBounds(max);
             // c)
-            std::for_each(sat.begin(), sat.end(), bind(sat_assert, fi, _1));        
+            std::for_each(sat.begin(), sat.end(), sat_assert(fi));
         }
         
         // 3) Try to merge back if possible.

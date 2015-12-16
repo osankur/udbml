@@ -42,6 +42,9 @@ SOURCES    := $(filter-out $(patsubst %,$(MODULESRC)/%,$(IGNORE)), $(wildcard $(
 OBJS       := $(patsubst %.c,%.o,$(patsubst %.cpp,%.o,$(notdir $(SOURCES)))) $(PARSEROBJS)
 INC        := -I$(MODULEDST) -I$(DSTDIR)/include -I$(MODULESRC) -I$(SRCDIR)/include
 
+# c++11
+CXXFLAGS := -std=c++11
+
 # Fix flags for MacOSX
 DEPCFLAGS  := $(CFLAGS:-isysroot=)
 DEPCFLAGS  := $(DEPCFLAGS:/Developer/SDKs/MacOSX10.5.sdk=)
@@ -98,15 +101,15 @@ clean :
 	@$(AR) rucs $@ $(OBJS)
 
 %.o : $(MODULESRC)/%.cpp
-	@echo "$(CXX) $($@-FLAGS): $(MODULE)/$@"
-	@$(CXX) -o $@ -c $< $(CFLAGS) $($@-FLAGS) $(INC)
+	@echo "$(CXX) $(CFLAGS) $(CXXFLAGS) $($@-FLAGS): $(MODULE)/$@"
+	@$(CXX) -o $@ -c $< $(CFLAGS) $(CXXFLAGS) $($@-FLAGS) $(INC)
 
 %.o : %.cc
-	@echo "$(CXX) $($@-FLAGS): $(MODULE)/$@"
-	@$(CXX) -o $@ -c $< $(CFLAGS) $($@-FLAGS) $(INC)
+	@echo "$(CXX) $(CFLAGS) $(CXXFLAGS) $($@-FLAGS): $(MODULE)/$@"
+	@$(CXX) -o $@ -c $< $(CFLAGS) $(CXXFLAGS) $($@-FLAGS) $(INC)
 
 %.o : $(MODULESRC)/%.c
-	@echo "$(CC) $($@-FLAGS): $(MODULE)/$@"
+	@echo "$(CC) $(CFLAGS) $($@-FLAGS): $(MODULE)/$@"
 	@$(CC) -o $@ -c $< $(CFLAGS) $($@-FLAGS) $(INC)
 
 # Generic rules to generate source (gperf,lex,bison)

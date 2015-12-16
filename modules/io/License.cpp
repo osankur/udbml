@@ -156,10 +156,10 @@ namespace io
     { 
         // Don't leave this stupid key in clear text anywhere.
         static const char randomKey[] = {
-            72,221,115,22,134,115,219,213,45,124,221,41,
-            147,216,121,184,199,123,238,46,79,152,247,173,
-            129,142,134,203,168,111,157,87,79,109,138,144,
-            227,157,127,254,67,43,13,159,121,58,239,117
+            72,(char)221,115,22,(char)134,115,(char)219,(char)213,45,124,(char)221,41,
+            (char)147,(char)216,121,(char)184,(char)199,123,(char)238,46,79,(char)152,(char)247,(char)173,
+            (char)129,(char)142,(char)134,(char)203,(char)168,111,(char)157,87,79,109,(char)138,(char)144,
+            (char)227,(char)157,127,(char)254,67,43,13,(char)159,121,58,(char)239,117
         };
         
         // Revisit: strings are immutable, this produces copies all the time.

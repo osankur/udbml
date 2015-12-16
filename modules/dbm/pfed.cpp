@@ -33,9 +33,10 @@
 #include <algorithm>
 #include <numeric>
 #include <memory>
-#include <boost/bind.hpp>
+#include <functional>
 
-using boost::bind;
+using std::bind;
+using namespace std::placeholders;
 using std::for_each;
 using std::accumulate;
 using std::find_if;

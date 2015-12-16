@@ -5,12 +5,12 @@
 
 # Init 
 
-AC_INIT([UPPAAL], [4.1.4 ()], [bug-uppaal@list.it.uu.se])
+AC_INIT([UPPAAL], [4.1.4 (4761)], [bug-uppaal@list.it.uu.se])
 AC_CONFIG_AUX_DIR(../scripts/)
 AC_CONFIG_SRCDIR(version.sh)
 AC_SUBST(MODULE_LIBS,[" base.lib dbm.lib debug.lib hash.lib io.lib"])
 AC_SUBST(DBM_VERSION,["2.0.8"])
-AC_SUBST(TIGA_VERSION,["4.1.4-0.16 ()"])
+AC_SUBST(TIGA_VERSION,["4.1.4-0.16 (4761)"])
 
 # Set C++ as the language for tests
 
@@ -93,8 +93,8 @@ AC_SUBST(XMLSTATIC,$XMLSTATIC)
 AC_HEADER_STDC
 AC_CHECK_HEADERS([stdint.h inttypes.h unistd.h errno.h memory.h string.h strings.h sys/wait.h])
 AC_CHECK_HEADERS([ext/slist slist sstream strstream])
-AC_CHECK_HEADERS([boost/bind.hpp boost/lambda/lambda.hpp boost/lambda/bind.hpp],,
-                [AC_MSG_ERROR([boost header files not found])])
+# AC_CHECK_HEADERS([boost/bind.hpp boost/lambda/lambda.hpp boost/lambda/bind.hpp],,
+#                 [AC_MSG_ERROR([boost header files not found])])
 
 # Other customized checks, see acinclude.m4
 # One customized check is wrong for icc
@@ -130,10 +130,10 @@ icc*)
 	;;
 esac
 
-AC_DEFINE(VERSION, "4.1.4 ()", [The UPPAAL version number])
-AC_DEFINE(PACKAGE_MONTH, "April", [The release month])
-AC_DEFINE(PACKAGE_YEAR, "2011", [The release year])
-AC_DEFINE(TIGA_VERSION, "4.1.4-0.16 ()", [Tiga version])
+AC_DEFINE(VERSION, "4.1.4 (4761)", [The UPPAAL version number])
+AC_DEFINE(PACKAGE_MONTH, "October", [The release month])
+AC_DEFINE(PACKAGE_YEAR, "2015", [The release year])
+AC_DEFINE(TIGA_VERSION, "4.1.4-0.16 (4761)", [Tiga version])
 AC_DEFINE(DBM_VERSION, "2.0.8", [Version of the DBM library])
 
 # Checks for typedefs, structures, and compiler characteristics.
