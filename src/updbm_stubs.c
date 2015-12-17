@@ -608,28 +608,21 @@ pdbm_square_inclusion_exp(const pdbm_t &z1, const pdbm_t &z2, const std::vector<
             pdbm_t prody = pdbm_build_product(z1, z2, mbounds, currentY);
 
             // to avoid reallocating again and again arrays to store the infimum valuation
-            static std::unordered_map<int, std::pair<bool*, int32_t*>> array_cache;
+            static std::unordered_map<int, int32_t*> array_cache;
             auto cacheit = array_cache.find(dim);
-            bool * free_clocks;
             int32_t * inf_val;
             if (cacheit == array_cache.end())
             {
                 // size 2*dim-1 fits all Y (the API require arrays of size at least the dimension
                 // of the product, which is at most 2*dim-1)
                 inf_val = new int32_t[2*dim-1];
-                free_clocks = new bool[2*dim-1];
-                for (int i = 0; i < 2*dim-1; ++i)
-                {
-                    free_clocks[i] = true;
-                }
-                array_cache[dim] = std::make_pair(free_clocks, inf_val);
+                array_cache[dim] = inf_val;
             }
             else
             {
-                free_clocks = cacheit->second.first;
-                inf_val = cacheit->second.second;
+                inf_val = cacheit->second;
             }
-            pdbm_getInfimumValuation(prody, prody.getDimension(), inf_val, free_clocks);
+            pdbm_getInfimumValuation(prody, prody.getDimension(), inf_val, NULL);
 
             // use this valuation to evaluate the searched sup for the current Y
             // inf_val = (v0,v0') and local_sup = z2(v0') - z1(v0)
