@@ -461,6 +461,20 @@ public:
         printf("\n\n");
     }
 
+    std::string
+    toString() const
+    {
+        std::stringstream res;
+        res << "Y = { ";
+        for (int i = 0; i < _is_in.size(); ++i)
+        {
+            if (_is_in[i])
+                res << i << ",";
+        }
+        res << "}";
+        return res.str();
+    }
+
 
 private:
     const clock_po_t & _order;
