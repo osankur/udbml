@@ -78,7 +78,7 @@ struct PDBM_s
  * @param  dim  is the dimension of \a pdbm.
  * @param  i    is the index of a clock
  * @param  j    is the index of a clock
- * @return True if and only if \a i and \a j form a zero cycle in \a pdbm.
+ * @return True if and only if \a i and \a jï¿½form a zero cycle in \a pdbm.
  */
 static bool pdbm_areOnZeroCycle(const PDBM pdbm, cindex_t dim, cindex_t i, cindex_t j)
 {
@@ -1287,6 +1287,20 @@ int32_t pdbm_getCostOfValuation(const PDBM pdbm, cindex_t dim, const int32_t *va
 {
     assert(pdbm && dim && valuation);
     assert(pdbm_containsInt(pdbm, dim, valuation));
+
+    raw_t  *dbm  = pdbm_matrix(pdbm);
+    int32_t cost = pdbm_cost(pdbm);
+    for (uint32_t i = 1; i < dim; i++)
+    {
+        cost += (valuation[i] - -dbm_raw2bound(DBM(0, i))) * pdbm_rates(pdbm)[i];
+    }
+    return cost;
+}
+
+int32_t pdbm_getCostOfVertex(const PDBM pdbm, cindex_t dim, const int32_t *valuation)
+{
+    assert(pdbm && dim && valuation);
+    assert(pdbm_containsIntWeakly(pdbm, dim, valuation));
 
     raw_t  *dbm  = pdbm_matrix(pdbm);
     int32_t cost = pdbm_cost(pdbm);

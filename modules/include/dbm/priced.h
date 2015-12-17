@@ -715,6 +715,17 @@ uint32_t pdbm_getUpperFacets(PDBM &pdbm, cindex_t dim, cindex_t *facets);
 int32_t pdbm_getCostOfValuation(const PDBM pdbm, cindex_t dim, const int32_t *valuation);
 
 /**
+ * Computes the cost of a vertex in a priced DBM.
+ *
+ * @param  pdbm
+ * @param  dim
+ * @param  valuation
+ * @pre    pdbm_containsIntWeakly(pdbm, dim, valuation)
+ * @return The cost of \a valuation in \a pdbm.
+ */
+int32_t pdbm_getCostOfVertex(const PDBM pdbm, cindex_t dim, const int32_t *valuation);
+
+/**
  * Makes all strong constraints of a priced DBM weak. 
  *
  * @param pdbm      is a closed priced DBM of dimension \a dim.
