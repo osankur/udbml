@@ -564,15 +564,11 @@ pdbm_square_inclusion_exp(const pdbm_t &z1, const pdbm_t &z2, const std::vector<
     if (! dbm_closure_leq(z1.const_dbm(), z2.const_dbm(), z1.getDimension(), mbounds, mbounds))
         return false;
 
-    // a cache for preorders on clocks
-    // TODO use dbm_t (and not pdbm_t) as key for the map
-    static std::unordered_map<pdbm_t, clock_po_t> order_cache;
-    clock_po_t preorder = order_cache.emplace(std::piecewise_construct,
-                                              std::make_tuple(z1),
-                                              std::make_tuple(z1, mbounds)).first->second;
-
     // get the dimension
     int dim = z1.getDimension();
+
+    // the clock order for the lhs zone
+    clock_po_t preorder(z1, mbounds);
     // initialize Y to emptyset
     clock_po_iterator currentY(preorder, dim);
 
