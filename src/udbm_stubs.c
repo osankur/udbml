@@ -6,6 +6,7 @@ extern "C" {
 #include <caml/alloc.h>
 #include <caml/callback.h>
 #include <caml/custom.h>
+#include <caml/intext.h>
 }
 #include <dbm/constraints.h>
 #include <dbm/fed.h>
@@ -105,13 +106,41 @@ extern "C" long hash_fed_it(value v){
 	return (long)get_fed_it_tp(v);
 }
 
+extern "C"
+void
+serialize_dbm(value v, unsigned long * wsize_32, unsigned long * wsize_64)
+{
+    const dbm_t & d = *get_dbm_ptr(v);
+    cindex_t dim = d.getDimension();
+    caml_serialize_int_4(dim);
+    for (int i = 0; i != dim*dim; ++i)
+    {
+        caml_serialize_int_4(d.const_dbm()[i]);
+    }
+    *wsize_32 = sizeof(dbm_t);
+    *wsize_64 = sizeof(dbm_t);
+}
+
+extern "C"
+unsigned long
+deserialize_dbm(void * dst)
+{
+    cindex_t dim = caml_deserialize_sint_4();
+    dbm_t * d = new (dst) dbm_t(dim);
+    for (int i = 0; i != dim*dim; ++i)
+    {
+        d->getDBM()[i] = caml_deserialize_sint_4();
+    }
+    return sizeof(dbm_t);
+}
+
 static struct custom_operations custom_ops_dbm = {
     .identifier     = (char*)"dbm_wrap_t handling",
     .finalize       = finalize_dbm,
     .compare        = compare_dbm,
     .hash           = hash_dbm,
-    .serialize      = custom_serialize_default,
-    .deserialize    = custom_deserialize_default
+    .serialize      = serialize_dbm,
+    .deserialize    = deserialize_dbm
 };
 static struct custom_operations custom_ops_fed = {
     .identifier     = (char*)"fed_wrap_t handling",
@@ -139,6 +168,16 @@ static struct custom_operations custom_ops_bitvector = {
     .deserialize    = custom_deserialize_default
 };
 
+// register dbm custom operations (required for the custom deserialization function)
+extern "C"
+CAMLprim value
+caml_udbml_register_dbm(value unit)
+{
+    CAMLparam1(unit);
+    printf("registering dbm ops\n");
+    caml_register_custom_operations(&custom_ops_dbm);
+    CAMLreturn(Val_unit);
+}
 
 // The bitvector interface
 extern "C" CAMLprim value
@@ -223,13 +262,40 @@ extern "C" long hash_carray(value v){
     return res;
 }
 
+extern "C"
+void
+serialize_carray(value v, unsigned long * wsize_32, unsigned long * wsize_64)
+{
+    const std::vector<int> &vv = *get_cvector(v);
+    caml_serialize_int_4(vv.size());
+    for (auto &val : vv)
+    {
+        caml_serialize_int_4(val);
+    }
+    *wsize_32 = sizeof(std::vector<int>);
+    *wsize_64 = sizeof(std::vector<int>);
+}
+
+extern "C"
+unsigned long
+deserialize_carray(void * dst)
+{
+    int size = caml_deserialize_sint_4();
+    std::vector<int> * v = new (dst) std::vector<int>(size, 0);
+    for (int i = 0; i != size; ++i)
+    {
+        (*v)[i] = caml_deserialize_sint_4();
+    }
+    return sizeof(std::vector<int>);
+}
+
 static struct custom_operations custom_ops_carray = {
     .identifier     = (char*)"carray handling",
     .finalize       = finalize_carray,
     .compare        = compare_carray,
     .hash           = hash_carray,
-    .serialize      = custom_serialize_default,
-    .deserialize    = custom_deserialize_default,
+    .serialize      = serialize_carray,
+    .deserialize    = deserialize_carray,
 };
 
 extern "C" CAMLprim value
@@ -247,7 +313,16 @@ stub_carray_to_c(value v, value size)
     CAMLreturn(res);
 }
 
-
+// register carray custom operations (required for the custom deserialization function)
+extern "C"
+CAMLprim value
+caml_udbml_register_carray(value unit)
+{
+    CAMLparam1(unit);
+    printf("registering carray ops\n");
+    caml_register_custom_operations(&custom_ops_carray);
+    CAMLreturn(Val_unit);
+}
 
 
 // The dbm interface
