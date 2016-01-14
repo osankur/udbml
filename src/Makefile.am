@@ -9,7 +9,7 @@ MODULES=udbml_unpriced udbml_priced udbml
 MODULES_FILES=$(MODULES:=.cmi) $(MODULES:=.cmx)
 PACKAGE_FILES=libudbml.a udbml.a udbml.cmxa $(MODULES_FILES)
 
-INSTALL_FILES=$(foreach i,$(PACKAGE_FILES),$(BUILDDIR)/$i)
+INSTALL_FILES=$(foreach i,$(PACKAGE_FILES),$(BUILDDIR)/$i) udbm_stubs.h
 
 BUILDDIR=_build
 
