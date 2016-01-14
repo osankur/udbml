@@ -31,6 +31,9 @@ module Carray =
 struct
   type t
 
+  external _register_carray : unit -> unit = "caml_udbml_register_carray";;
+  let _ = _register_carray ()
+
   external to_c : int array -> int -> t = "stub_carray_to_c";;
 end
 

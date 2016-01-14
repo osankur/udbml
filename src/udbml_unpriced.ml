@@ -36,6 +36,10 @@ module Dbm =
 struct
   type t
   include Udbml.Basic_types
+
+  external _register_dbm : unit -> unit = "caml_udbml_register_dbm";;
+  let _ = _register_dbm ()
+
   external _max_dim_power : unit -> int = "stub_dbm_max_dim_power" "noalloc";;
   external _max_dim : unit -> int = "stub_dbm_max_dim" "noalloc";;
   
@@ -46,6 +50,7 @@ struct
   external dimension : t -> int = "stub_dbm_dimension" "noalloc";;
   external copy : t -> t = "stub_dbm_copy";;
   external is_empty : t -> bool = "stub_dbm_is_empty";;
+  external set_empty : t -> unit = "stub_dbm_set_empty";;
   external has_zero : t -> bool = "stub_dbm_has_zero";;
   external hash : t -> int = "stub_dbm_hash";;
   external intern : t -> unit = "stub_dbm_intern";;
@@ -139,6 +144,7 @@ struct
   external dimension : t -> int = "stub_fed_dimension";;
   external intern : t -> unit = "stub_fed_intern";;
   external is_empty : t -> bool = "stub_fed_is_empty" "noalloc";;
+  external set_empty : t -> unit = "stub_fed_set_empty";;
   external has_zero : t -> bool = "stub_fed_has_zero";;
   external hash : t -> int = "stub_fed_hash";;
   external set_init : t -> unit = "stub_fed_set_init";;
@@ -172,6 +178,7 @@ struct
   external union : t -> t -> unit = "stub_fed_union";;
   external add : t -> t -> unit = "stub_fed_add";;
   external add_dbm : t -> Dbm.t -> unit = "stub_fed_add_dbm";;
+  external has : t -> Dbm.t -> bool = "stub_fed_has";;
   external append : t -> t -> unit = "stub_fed_append";;
   external append_end : t -> t -> unit = "stub_fed_append_end";;
   external append_begin : t -> t -> unit = "stub_fed_append_begin";;
@@ -205,7 +212,7 @@ struct
     add_dbm b a;
     b
     
-
+  (* TODO should be hidden *)
   module Iterator =
   struct 
     type t
@@ -215,15 +222,27 @@ struct
     external has_next : t -> bool = "stub_fed_iterator_has_next";;
     external remove : t -> unit = "stub_fed_iterator_remove";;
     external insert : t -> Dbm.t -> unit = "stub_fed_iterator_insert";;
-  end 
+  end
+
+  type iterator_t = t * Iterator.t
   
-	external begin_it : t -> Iterator.t  = "stub_fed_begin_it";;
+  (* TODO should be hidden *)
+	external _begin_it : t -> Iterator.t  = "stub_fed_begin_it";;
+
+  let begin_it f = (f, _begin_it f)
+  let get_it (_,it) = Iterator.get it
+  let incr_it (_,it) = Iterator.incr it
+  let is_null_it (_,it) = Iterator.is_null it
+  let has_next_it (_,it) = Iterator.has_next it
+  let remove_it (_,it) = Iterator.remove it
+  let insert_it (_,it) = Iterator.insert it
+    
   let iter t f = 
     let it = begin_it t in
-    while not(Iterator.is_null it) do
-      let dbm = Iterator.get it in
+    while not(is_null_it it) do
+      let dbm = get_it it in
       f dbm;
-      Iterator.incr it;
+      incr_it it;
     done
 
 end

@@ -173,6 +173,15 @@ stub_pdbm_is_empty(value v)
 }
 
 extern "C" CAMLprim value
+stub_pdbm_set_empty(value v)
+{
+    CAMLparam1(v);
+    get_pdbm_ptr(v)->~pdbm_t();
+    new (Data_custom_val(v)) pdbm_wrap_t();
+    CAMLreturn(Val_unit);
+}
+
+extern "C" CAMLprim value
 stub_pdbm_is_unbounded(value v)
 {
     pdbm_wrap_t * pdbm = get_pdbm_ptr(v);
@@ -452,6 +461,20 @@ public:
         printf("\n\n");
     }
 
+    std::string
+    toString() const
+    {
+        std::stringstream res;
+        res << "Y = { ";
+        for (int i = 0; i < _is_in.size(); ++i)
+        {
+            if (_is_in[i])
+                res << i << ",";
+        }
+        res << "}";
+        return res.str();
+    }
+
 
 private:
     const clock_po_t & _order;
@@ -480,14 +503,8 @@ pdbm_build_product(const pdbm_t &z1,
     // initialize
     pdbm_init(result, ndim);
 
+    bool non_empty = true;
     // constrain it
-    // Get the inner matrix of the priced DBM. The matrix can be
-    // modified as long as \c pdbm_close() is called before any other
-    // operations are performed on the priced DBM.
-    // We should call pdbm_close before setting the rates...
-    raw_t * rmatrix = pdbm_getMutableMatrix(result, ndim);
-    // recall: result[i,j] = rmatrix[i*ndim + j]
-
     for (int i = 0, ki = dim; i < dim; ++i)
     {
         int ii = (i && !y.is_in(i)) ? ki++ : i;
@@ -496,12 +513,12 @@ pdbm_build_product(const pdbm_t &z1,
             // constrain it with x <= M for x in Y, x > M otherwise
             if (y.is_in(i))
             {
-                rmatrix[i*ndim] = dbm_boundbool2raw(mbounds[i], false);
+                non_empty = pdbm_constrain1(result, ndim, i, 0, dbm_boundbool2raw(mbounds[i], false));
             }
             else
             {
-                rmatrix[i] = dbm_boundbool2raw(-mbounds[i], true);
-                rmatrix[ii] = dbm_boundbool2raw(-mbounds[i], true);
+                non_empty = pdbm_constrain1(result, ndim, 0, i, dbm_boundbool2raw(-mbounds[i], true));
+                non_empty = pdbm_constrain1(result, ndim, 0, ii, dbm_boundbool2raw(-mbounds[i], true));
             }
         }
 
@@ -509,12 +526,11 @@ pdbm_build_product(const pdbm_t &z1,
         {
             int jj = (j && !y.is_in(j)) ? kj++ : j;
             // constrain from z1
-            rmatrix[i*ndim+j] = z1(i,j);
+            non_empty = pdbm_constrain1(result, ndim, i, j, z1(i,j));
             // constrain from z2
-            rmatrix[ii*ndim+jj] = z2(i,j);
+            non_empty = pdbm_constrain1(result, ndim, ii, jj, z2(i,j));
         }
     }
-    pdbm_close(result, ndim);
 
     // set the rates
     // WARNING  when building the corresponding cost function
@@ -548,15 +564,11 @@ pdbm_square_inclusion_exp(const pdbm_t &z1, const pdbm_t &z2, const std::vector<
     if (! dbm_closure_leq(z1.const_dbm(), z2.const_dbm(), z1.getDimension(), mbounds, mbounds))
         return false;
 
-    // a cache for preorders on clocks
-    // TODO use dbm_t (and not pdbm_t) as key for the map
-    static std::unordered_map<pdbm_t, clock_po_t> order_cache;
-    clock_po_t preorder = order_cache.emplace(std::piecewise_construct,
-                                              std::make_tuple(z1),
-                                              std::make_tuple(z1, mbounds)).first->second;
-
     // get the dimension
     int dim = z1.getDimension();
+
+    // the clock order for the lhs zone
+    clock_po_t preorder(z1, mbounds);
     // initialize Y to emptyset
     clock_po_iterator currentY(preorder, dim);
 
@@ -585,28 +597,21 @@ pdbm_square_inclusion_exp(const pdbm_t &z1, const pdbm_t &z2, const std::vector<
             pdbm_t prody = pdbm_build_product(z1, z2, mbounds, currentY);
 
             // to avoid reallocating again and again arrays to store the infimum valuation
-            static std::unordered_map<int, std::pair<bool*, int32_t*>> array_cache;
+            static std::unordered_map<int, int32_t*> array_cache;
             auto cacheit = array_cache.find(dim);
-            bool * free_clocks;
             int32_t * inf_val;
             if (cacheit == array_cache.end())
             {
                 // size 2*dim-1 fits all Y (the API require arrays of size at least the dimension
                 // of the product, which is at most 2*dim-1)
                 inf_val = new int32_t[2*dim-1];
-                free_clocks = new bool[2*dim-1];
-                for (int i = 0; i < 2*dim-1; ++i)
-                {
-                    free_clocks[i] = true;
-                }
-                array_cache[dim] = std::make_pair(free_clocks, inf_val);
+                array_cache[dim] = inf_val;
             }
             else
             {
-                free_clocks = cacheit->second.first;
-                inf_val = cacheit->second.second;
+                inf_val = cacheit->second;
             }
-            pdbm_getInfimumValuation(prody, prody.getDimension(), inf_val, free_clocks);
+            pdbm_getInfimumValuation(prody, prody.getDimension(), inf_val, NULL);
 
             // use this valuation to evaluate the searched sup for the current Y
             // inf_val = (v0,v0') and local_sup = z2(v0') - z1(v0)
@@ -707,6 +712,23 @@ stub_pfed_add_dbm(value v, value d)
     return Val_unit;
 }
 
+extern "C" CAMLprim value
+stub_pfed_has(value t, value z)
+{
+    CAMLparam2(t, z);
+    bool res = false;
+    for (pfed_t::const_iterator it = get_pfed_ptr(t)->begin();
+         it != get_pfed_ptr(t)->end(); ++it)
+    {
+        if (*it == *get_pdbm_ptr(z))
+        {
+            res = true;
+            break;
+        }
+    }
+    CAMLreturn(Val_bool(res));
+}
+
 // returns true iff d is non-empty afterwards
 bool
 pdbm_intersect_dbm(pdbm_t & d, const dbm_t & dbm)
@@ -750,23 +772,59 @@ stub_pfed_intersect_dbm(value v, value d)
 extern "C" CAMLprim value
 stub_pfed_hash(value v)
 {
-    CAMLparam1(v);
-    CAMLreturn(Val_long(get_pfed_ptr(v)->hash(0)));
+    return Val_long(get_pfed_ptr(v)->hash(0));
+}
+
+extern "C" CAMLprim value
+stub_pfed_is_empty(value v)
+{
+    return Val_bool(get_pfed_ptr(v)->isEmpty());
+}
+
+extern "C" CAMLprim value
+stub_pfed_set_empty(value t)
+{
+    CAMLparam1(t);
+    pfed_t * f = get_pfed_ptr(t);
+    f->setEmpty();
+    CAMLreturn(Val_unit);
 }
 
 extern "C" CAMLprim value
 stub_pfed_up(value v)
 {
-    CAMLparam1(v);
     get_pfed_ptr(v)->up(1);
-    CAMLreturn(Val_unit);
+    return Val_unit;
 }
 
 extern "C" CAMLprim value
 stub_pfed_update_value(value t, value c, value b)
 {
-    CAMLparam3(t,c,b);
     get_pfed_ptr(t)->updateValue(Int_val(c), Int_val(b));
+    return Val_unit;
+}
+
+extern "C" CAMLprim value
+stub_pfed_iterate(value t, value f)
+{
+    CAMLparam2(t,f);
+    CAMLlocal1(z);
+
+    // initialize z
+    z = caml_alloc_custom(&custom_ops_pdbm, sizeof(pdbm_wrap_t), 0, 1);
+    new (Data_custom_val(z)) pdbm_wrap_t();
+
+    for (pfed_t::iterator it = get_pfed_ptr(t)->beginMutable(); it != get_pfed_ptr(t)->endMutable(); ++it)
+    {
+        // reuse z, to avoid repeated allocation
+        get_pdbm_ptr(z)->~pdbm_t();
+        new (Data_custom_val(z)) pdbm_wrap_t(*it);
+        // callback
+        caml_callback(f, z);
+        // in case f has changed the value of z, update it with the new value of z
+        *it = *get_pdbm_ptr(z);
+    }
+
     CAMLreturn(Val_unit);
 }
 
@@ -783,19 +841,17 @@ stub_pfed_iterator_get(value v)
 extern "C" CAMLprim value
 stub_pfed_iterator_notequal(value v1, value v2)
 {
-    CAMLparam2(v1, v2);
     const pfed_it_wrap_t & i1 = *get_pfed_it_ptr(v1);
     const pfed_it_wrap_t & i2 = *get_pfed_it_ptr(v2);
-    CAMLreturn(Val_bool(i1 != i2));
+    return Val_bool(i1 != i2);
 }
 
 extern "C" CAMLprim value
 stub_pfed_iterator_incr(value v)
 {
-    CAMLparam1(v);
     pfed_it_wrap_t & i = *get_pfed_it_ptr(v);
     ++i;
-    CAMLreturn(Val_unit);
+    return Val_unit;
 }
 
 extern "C" CAMLprim value
