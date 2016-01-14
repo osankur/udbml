@@ -485,10 +485,8 @@ private:
 
 // a function that builds the product priced zone for a given subset of clocks Y
 // the corresponding function has rates
-//   - r(x)     if x is in Y
-//   r'(x)      if x' is in Y'
-//   - r(x)     if x is in X-Y
-//   - r'(x)    if x' is in X'-Y'
+//  r(x)    for x in X
+//  -r'(x)  for x in X'
 pdbm_t
 pdbm_build_product(const pdbm_t &z1,
                    const pdbm_t &z2,
@@ -544,8 +542,8 @@ pdbm_build_product(const pdbm_t &z1,
         }
         else
         {
-            pdbm_setRate(result, ndim, i, pdbm_getRate(z1, dim, i));
-            pdbm_setRate(result, ndim, ki, pdbm_getRate(z2, dim, i));
+            pdbm_setRate(result, ndim, i,  pdbm_getRate(z1, dim, i));
+            pdbm_setRate(result, ndim, ki, -pdbm_getRate(z2, dim, i));
             ++ki;
         }
     }
@@ -573,6 +571,7 @@ pdbm_square_inclusion_exp(const pdbm_t &z1, const pdbm_t &z2, const std::vector<
     clock_po_iterator currentY(preorder, dim);
 
     // the main loop
+    // TODO make it parallel, one thread for each Y
     do
     {
         // first check whether Z_Y is empty
@@ -595,41 +594,84 @@ pdbm_square_inclusion_exp(const pdbm_t &z1, const pdbm_t &z2, const std::vector<
         {
             // build the product for the current Y
             pdbm_t prody = pdbm_build_product(z1, z2, mbounds, currentY);
+            cindex_t ndim = prody.getDimension();
+            // ensure that the product is closed topologically
 
-            // to avoid reallocating again and again arrays to store the infimum valuation
-            static std::unordered_map<int, int32_t*> array_cache;
-            auto cacheit = array_cache.find(dim);
-            int32_t * inf_val;
-            if (cacheit == array_cache.end())
-            {
-                // size 2*dim-1 fits all Y (the API require arrays of size at least the dimension
-                // of the product, which is at most 2*dim-1)
-                inf_val = new int32_t[2*dim-1];
-                array_cache[dim] = inf_val;
-            }
-            else
-            {
-                inf_val = cacheit->second;
-            }
-            pdbm_getInfimumValuation(prody, prody.getDimension(), inf_val, NULL);
+            pdbm_relax(prody, ndim);
+            // WARNING: in the product, rates are negated, so that we compute inf sup
+            //          projection should thus maximize function
+            //          inclusion holds if all infima are >= 0
 
-            // use this valuation to evaluate the searched sup for the current Y
-            // inf_val = (v0,v0') and local_sup = z2(v0') - z1(v0)
-            int32_t local_sup = - pdbm_getCostOfValuation(z1, dim, inf_val);
-            // reuse inf_val for v0', to avoid allocating yet another vector
-            for (int i = 1, ki = dim; i < dim; ++i)
+            // put it in a vector
+            std::vector<pdbm_t> allfacets;
+            allfacets.push_back(prody);
+            // for each clock not in Y, do a projection
+            for (cindex_t i = 1, ki = dim; i < dim; ++i)
             {
-                if (! currentY.is_in(i))
+                cindex_t cl1 = i;
+                cindex_t cl2 = (i && !currentY.is_in(i)) ? ki++ : i;
+
+                if (!currentY.is_in(i))
                 {
-                    inf_val[i] = inf_val[ki];
-                    ++ki;
+                    // project on x
+                    {
+                        std::vector<pdbm_t> refined_facets;
+                        for (pdbm_t z : allfacets)
+                        {
+                            uint32_t facets[ndim];
+                            uint32_t count;
+                            if (pdbm_getRate(z, ndim, cl1) >= 0)
+                            {
+                                count = pdbm_getLowerRelativeFacets(z, ndim, cl1, facets);
+                            }
+                            else
+                            {
+                                count = pdbm_getUpperRelativeFacets(z, ndim, cl1, facets);
+                            }
+
+                            for (uint32_t j = 0; j < count; ++j)
+                            {
+                                // /!\ do not modify z, copy it first
+                                refined_facets.push_back(z);
+                                pdbm_constrainToFacet(refined_facets.back(), ndim, cl1, facets[j]);
+                            }
+                        }
+                        allfacets = refined_facets;
+                    }
+
+                    // project on x'
+                    {
+                        std::vector<pdbm_t> refined_facets;
+                        for (pdbm_t z : allfacets)
+                        {
+                            uint32_t facets[ndim];
+                            uint32_t count;
+                            if (pdbm_getRate(z, ndim, cl2) <= 0)
+                            {
+                                count = pdbm_getLowerRelativeFacets(z, ndim, cl2, facets);
+                            }
+                            else
+                            {
+                                count = pdbm_getUpperRelativeFacets(z, ndim, cl2, facets);
+                            }
+
+                            for (uint32_t j = 0; j < count; ++j)
+                            {
+                                // /!\ do not modify z, copy it first
+                                refined_facets.push_back(z);
+                                pdbm_constrainToFacet(refined_facets.back(), ndim, cl2, facets[j]);
+                            }
+                        }
+                        allfacets = refined_facets;
+                    }
                 }
             }
-            local_sup += pdbm_getCostOfValuation(z2, dim, inf_val);
 
-            // if positive, return early
-            if (local_sup > 0)
-                return false;
+            for (pdbm_t z : allfacets)
+            {
+                if (pdbm_getInfimum(z, ndim) < 0)
+                    return false;
+            }
         }
 
         // go to next Y
@@ -747,7 +789,7 @@ pdbm_intersect_dbm(pdbm_t & d, const dbm_t & dbm)
     int32_t * offset = new int32_t[dim];
     offset[0] = 0;
     pdbm_getOffset(d, dim, offset);
-    int32_t cost = pdbm_getCostOfValuation(old_d, dim, offset);
+    int32_t cost = pdbm_getCostOfVertex(old_d, dim, offset);
     pdbm_setCostAtOffset(d, dim, cost);
     delete[] offset;
     return true;
