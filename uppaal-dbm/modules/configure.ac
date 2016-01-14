@@ -37,7 +37,7 @@ AC_SUBST(LINKFLAGS,$LINKFLAGS)
 AC_SUBST(EXTRALIBS,$EXTRALIBS)
 
 # Fix option for boost and merge flags.
-CFLAGS="$CFLAGS $CPPFLAGS $CXXFLAGS -DBOOST_DISABLE_THREADS"
+CFLAGS="$CFLAGS $CPPFLAGS $CXXFLAGS"
 
 # Fix option for libxml under Windows (Cygwin).
 if test "$OS" == "Cygwin"; then
@@ -92,14 +92,11 @@ AC_SUBST(XMLSTATIC,$XMLSTATIC)
 
 AC_HEADER_STDC
 AC_CHECK_HEADERS([stdint.h inttypes.h unistd.h errno.h memory.h string.h strings.h sys/wait.h])
-AC_CHECK_HEADERS([ext/slist slist sstream strstream])
-# AC_CHECK_HEADERS([boost/bind.hpp boost/lambda/lambda.hpp boost/lambda/bind.hpp],,
-#                 [AC_MSG_ERROR([boost header files not found])])
+AC_CHECK_HEADERS([sstream strstream])
 
 # Other customized checks, see acinclude.m4
 # One customized check is wrong for icc
 
-UA_CXX_SLIST
 UA_CXX_STREAMBUF
 
 # Define INTEL_ARCH on Intel architectures
@@ -131,8 +128,8 @@ icc*)
 esac
 
 AC_DEFINE(VERSION, "4.1.4 (4761)", [The UPPAAL version number])
-AC_DEFINE(PACKAGE_MONTH, "October", [The release month])
-AC_DEFINE(PACKAGE_YEAR, "2015", [The release year])
+AC_DEFINE(PACKAGE_MONTH, "January", [The release month])
+AC_DEFINE(PACKAGE_YEAR, "2016", [The release year])
 AC_DEFINE(TIGA_VERSION, "4.1.4-0.16 (4761)", [Tiga version])
 AC_DEFINE(DBM_VERSION, "2.0.8", [Version of the DBM library])
 
