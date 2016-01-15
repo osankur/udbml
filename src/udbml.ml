@@ -22,9 +22,9 @@ struct
   let infty = get_infty()
 
   let string_of_raw = function
-    | (b,_) when b = infty -> "(INF,<)"
-    | (b,DBM_WEAK) -> Printf.sprintf "(%d,<=)" b
-    | (b,DBM_STRICT) -> Printf.sprintf "(%d,<)" b
+    | (b,_) when b = infty -> "<INF"
+    | (b,DBM_WEAK) -> Printf.sprintf "<=%d" b
+    | (b,DBM_STRICT) -> Printf.sprintf "<%d" b
 end
 
 module Carray =
