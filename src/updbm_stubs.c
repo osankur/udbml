@@ -833,9 +833,9 @@ stub_pfed_set_empty(value t)
 }
 
 extern "C" CAMLprim value
-stub_pfed_up(value v)
+stub_pfed_up(value v, value rate)
 {
-    get_pfed_ptr(v)->up(1);
+    get_pfed_ptr(v)->up(Int_val(rate));
     return Val_unit;
 }
 
