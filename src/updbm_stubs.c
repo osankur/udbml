@@ -633,7 +633,13 @@ pdbm_square_inclusion_exp(const pdbm_t &z1, const pdbm_t &z2, const std::vector<
                             {
                                 // /!\ do not modify z, copy it first
                                 refined_facets.push_back(z);
-                                pdbm_constrainToFacet(refined_facets.back(), ndim, cl1, facets[j]);
+                                bool facet_not_empty = pdbm_constrainToFacet(refined_facets.back(), ndim, cl1, facets[j]);
+
+                                if (!facet_not_empty)
+                                {
+                                    // the computed facet is at infinity and is not a real one
+                                    refined_facets.pop_back();
+                                }
                             }
                         }
                         allfacets = refined_facets;
@@ -659,7 +665,13 @@ pdbm_square_inclusion_exp(const pdbm_t &z1, const pdbm_t &z2, const std::vector<
                             {
                                 // /!\ do not modify z, copy it first
                                 refined_facets.push_back(z);
-                                pdbm_constrainToFacet(refined_facets.back(), ndim, cl2, facets[j]);
+                                bool facet_not_empty = pdbm_constrainToFacet(refined_facets.back(), ndim, cl2, facets[j]);
+
+                                if (!facet_not_empty)
+                                {
+                                    // the computed facet is at infinity and is not a real one
+                                    refined_facets.pop_back();
+                                }
                             }
                         }
                         allfacets = refined_facets;
