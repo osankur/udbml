@@ -548,6 +548,35 @@ pdbm_build_product(const pdbm_t &z1,
         }
     }
 
+    // set the cost at offset of the built zone
+    // get the offset \Delta = (v_0,v_0')
+    // compute \zeta(v_0) - \zeta'(v_0')
+
+    // a static array of size 2*dim to fit all Y's, and avoid multiple allocations/deallocations
+    static size_t _dim = 0;
+    static int32_t * offset = NULL;
+    if (_dim < dim)
+    {
+        _dim = dim;
+        delete[] offset;
+        offset = new int32_t[2*dim];
+    }
+
+    // compute the offset of the product
+    pdbm_getOffset(result, ndim, offset);
+    int32_t cao = pdbm_getCostOfVertex(z1, dim, offset);
+    for (int i = 1, ki = dim; i < dim; ++i)
+    {
+        if (!y.is_in(i))
+        {
+            offset[i] = offset[ki];
+            ++ki;
+        }
+    }
+    cao -= pdbm_getCostOfVertex(z2, dim, offset);
+
+    pdbm_setCostAtOffset(result, ndim, cao);
+
     // return the result
     return result;
 }
