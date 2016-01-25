@@ -456,21 +456,23 @@ relation_t pdbm_relation(const PDBM pdbm1, const PDBM pdbm2, cindex_t dim)
 
         /* Do sound and cheap comparison first.
          */
-        c = cost1 <= cost2 && leq(rates1, rates1 + dim, rates2);
-        d = cost2 <= cost1 && leq(rates2, rates2 + dim, rates1);
-
-        if (c & d)
-        {
-            return base_EQUAL;
-        }
-        else if (c)
-        {
-            return base_SUPERSET;
-        }
-        else if (d)
-        {
-            return base_SUBSET;
-        }        
+        /* This test is not sound when the zone is reduced to a single point
+         */
+//        c = cost1 <= cost2 && leq(rates1, rates1 + dim, rates2);
+//        d = cost2 <= cost1 && leq(rates2, rates2 + dim, rates1);
+//
+//        if (c & d)
+//        {
+//            return base_EQUAL;
+//        }
+//        else if (c)
+//        {
+//            return base_SUPERSET;
+//        }
+//        else if (d)
+//        {
+//            return base_SUBSET;
+//        }
 
         /* The planes are incomparable, so we need to do the
          * subtraction. Notice that priced zones are not canonical,
@@ -491,6 +493,7 @@ relation_t pdbm_relation(const PDBM pdbm1, const PDBM pdbm2, cindex_t dim)
         }
         
         d = infOfDiff(dbm1, dim, cost1, rates1, cost2, rates2);
+
         if (c == 0 && d == 0)
         {
             return base_EQUAL;
