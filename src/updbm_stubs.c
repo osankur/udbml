@@ -483,104 +483,6 @@ private:
     cindex_t _size; // the size of the current subset
 };
 
-// a function that builds the product priced zone for a given subset of clocks Y
-// the corresponding function has rates
-//  r(x)    for x in X
-//  -r'(x)  for x in X'
-pdbm_t
-pdbm_build_product(const pdbm_t &z1,
-                   const pdbm_t &z2,
-                   const std::vector<int> &mbounds,
-                   const clock_po_iterator &y)
-{
-    assert(z1.getDimension() == z2.getDimension());
-    int dim = z1.getDimension();
-    int ndim = 2*dim-1-y.count();
-    // create a new dbm of size ndim (the reference clock and those in Y need not be duplicated)
-    pdbm_t result = pdbm_t(ndim);
-    // initialize
-    pdbm_init(result, ndim);
-
-    bool non_empty = true;
-    // constrain it
-    for (int i = 0, ki = dim; i < dim; ++i)
-    {
-        int ii = (i && !y.is_in(i)) ? ki++ : i;
-        if (i > 0)
-        {
-            // constrain it with x <= M for x in Y, x > M otherwise
-            if (y.is_in(i))
-            {
-                non_empty = pdbm_constrain1(result, ndim, i, 0, dbm_boundbool2raw(mbounds[i], false));
-            }
-            else
-            {
-                non_empty = pdbm_constrain1(result, ndim, 0, i, dbm_boundbool2raw(-mbounds[i], true));
-                non_empty = pdbm_constrain1(result, ndim, 0, ii, dbm_boundbool2raw(-mbounds[i], true));
-            }
-        }
-
-        for (int j = 0, kj = dim; j < dim; ++j)
-        {
-            int jj = (j && !y.is_in(j)) ? kj++ : j;
-            // constrain from z1
-            non_empty = pdbm_constrain1(result, ndim, i, j, z1(i,j));
-            // constrain from z2
-            non_empty = pdbm_constrain1(result, ndim, ii, jj, z2(i,j));
-        }
-    }
-
-    // set the rates
-    // WARNING  when building the corresponding cost function
-    //          negate the function, so that its infimum corresponds to the supremum we want
-    //          (the API computes the infimum rather than the supremum)
-    for (int i = 1, ki = dim; i < dim; ++i)
-    {
-        if (y.is_in(i))
-        {
-            pdbm_setRate(result, ndim, i, pdbm_getRate(z1, dim, i) - pdbm_getRate(z2, dim, i));
-        }
-        else
-        {
-            pdbm_setRate(result, ndim, i,  pdbm_getRate(z1, dim, i));
-            pdbm_setRate(result, ndim, ki, -pdbm_getRate(z2, dim, i));
-            ++ki;
-        }
-    }
-
-    // set the cost at offset of the built zone
-    // get the offset \Delta = (v_0,v_0')
-    // compute \zeta(v_0) - \zeta'(v_0')
-
-    // a static array of size 2*dim to fit all Y's, and avoid multiple allocations/deallocations
-    static size_t _dim = 0;
-    static int32_t * offset = NULL;
-    if (_dim < dim)
-    {
-        _dim = dim;
-        delete[] offset;
-        offset = new int32_t[2*dim];
-    }
-
-    // compute the offset of the product
-    pdbm_getOffset(result, ndim, offset);
-    int32_t cao = pdbm_getCostOfVertex(z1, dim, offset);
-    for (int i = 1, ki = dim; i < dim; ++i)
-    {
-        if (!y.is_in(i))
-        {
-            offset[i] = offset[ki];
-            ++ki;
-        }
-    }
-    cao -= pdbm_getCostOfVertex(z2, dim, offset);
-
-    pdbm_setCostAtOffset(result, ndim, cao);
-
-    // return the result
-    return result;
-}
-
 // check whether a priced zone dominates another
 // this is based on the exploration of all subsets of clocks
 bool
@@ -592,7 +494,7 @@ pdbm_square_inclusion_exp(const pdbm_t &z1, const pdbm_t &z2, const std::vector<
         return false;
 
     // get the dimension
-    int dim = z1.getDimension();
+    cindex_t dim = z1.getDimension();
 
     // the clock order for the lhs zone
     clock_po_t preorder(z1, mbounds);
@@ -600,118 +502,59 @@ pdbm_square_inclusion_exp(const pdbm_t &z1, const pdbm_t &z2, const std::vector<
     clock_po_iterator currentY(preorder, dim);
 
     // the main loop
-    // TODO make it parallel, one thread for each Y
+    // TODO make it parallel, e.g. one thread for each Y
     do
     {
-        // first check whether Z_Y is empty
-        dbm_t zy1(z1.const_dbm(), dim);
+        // first build Z_Y and Z_Y'
+        pdbm_t zy1 = z1;
+        pdbm_t zy2 = z2;
         bool zy1_not_empty = true;
-        for (int i = 1; zy1_not_empty && i < dim; ++i)
+        for (int i = 1; zy1_not_empty && i != dim; ++i)
         {
             if (currentY.is_in(i))
             {
-                zy1_not_empty = zy1.constrain(i, 0, dbm_boundbool2raw(mbounds[i], false));
-            } else {
-                zy1_not_empty = zy1.constrain(0, i, dbm_boundbool2raw(-mbounds[i], true));
+                zy1_not_empty = pdbm_constrain1(zy1, dim, i, 0, dbm_boundbool2raw(mbounds[i], false));
+                pdbm_constrain1(zy2, dim, i, 0, dbm_boundbool2raw(mbounds[i], false));
+            }
+            else
+            {
+                zy1_not_empty = pdbm_constrain1(zy1, dim, 0, i, dbm_boundbool2raw(-mbounds[i], true));
+                pdbm_constrain1(zy2, dim, 0, i, dbm_boundbool2raw(-mbounds[i], true));
             }
         }
 
-        // TODO do not build zy1, build the product directly
-        //      zy1 empty iff the product is empty
-
+        // if Z_Y is not empty
         if (zy1_not_empty)
         {
-            // build the product for the current Y
-            pdbm_t prody = pdbm_build_product(z1, z2, mbounds, currentY);
-            cindex_t ndim = prody.getDimension();
-            // ensure that the product is closed topologically
+            // relax, i.e. take the topological closure
+            pdbm_relax(zy1, dim);
+            pdbm_relax(zy2, dim);
 
-            pdbm_relax(prody, ndim);
-            // WARNING: in the product, rates are negated, so that we compute inf sup
-            //          projection should thus maximize function
-            //          inclusion holds if all infima are >= 0
+            // use feds for which all the needed operations are already implemented
+            pfed_t facets1(zy1, dim), facets2(zy2, dim);
 
-            // put it in a vector
-            std::vector<pdbm_t> allfacets;
-            allfacets.push_back(prody);
             // for each clock not in Y, do a projection
-            for (cindex_t i = 1, ki = dim; i < dim; ++i)
+            for (cindex_t cl = 1; cl != dim; ++cl)
             {
-                cindex_t cl1 = i;
-                cindex_t cl2 = (i && !currentY.is_in(i)) ? ki++ : i;
-
-                if (!currentY.is_in(i))
+                if (!currentY.is_in(cl))
                 {
-                    // project on x
-                    {
-                        std::vector<pdbm_t> refined_facets;
-                        for (pdbm_t z : allfacets)
-                        {
-                            uint32_t facets[ndim];
-                            uint32_t count;
-                            if (pdbm_getRate(z, ndim, cl1) >= 0)
-                            {
-                                count = pdbm_getLowerRelativeFacets(z, ndim, cl1, facets);
-                            }
-                            else
-                            {
-                                count = pdbm_getUpperRelativeFacets(z, ndim, cl1, facets);
-                            }
-
-                            for (uint32_t j = 0; j < count; ++j)
-                            {
-                                // /!\ do not modify z, copy it first
-                                refined_facets.push_back(z);
-                                bool facet_not_empty = pdbm_constrainToFacet(refined_facets.back(), ndim, cl1, facets[j]);
-
-                                if (!facet_not_empty)
-                                {
-                                    // the computed facet is at infinity and is not a real one
-                                    refined_facets.pop_back();
-                                }
-                            }
-                        }
-                        allfacets = refined_facets;
-                    }
-
-                    // project on x'
-                    {
-                        std::vector<pdbm_t> refined_facets;
-                        for (pdbm_t z : allfacets)
-                        {
-                            uint32_t facets[ndim];
-                            uint32_t count;
-                            if (pdbm_getRate(z, ndim, cl2) <= 0)
-                            {
-                                count = pdbm_getLowerRelativeFacets(z, ndim, cl2, facets);
-                            }
-                            else
-                            {
-                                count = pdbm_getUpperRelativeFacets(z, ndim, cl2, facets);
-                            }
-
-                            for (uint32_t j = 0; j < count; ++j)
-                            {
-                                // /!\ do not modify z, copy it first
-                                refined_facets.push_back(z);
-                                bool facet_not_empty = pdbm_constrainToFacet(refined_facets.back(), ndim, cl2, facets[j]);
-
-                                if (!facet_not_empty)
-                                {
-                                    // the computed facet is at infinity and is not a real one
-                                    refined_facets.pop_back();
-                                }
-                            }
-                        }
-                        allfacets = refined_facets;
-                    }
+                    facets1.updateValue(cl, 0);
+                    facets2.updateValue(cl, 0);
                 }
             }
 
-            for (pdbm_t z : allfacets)
+            // for each pair of facets
+            for (pdbm_t f1 : facets1)
             {
-                if (pdbm_getInfimum(z, ndim) < 0)
-                    return false;
+                for (pdbm_t f2 : facets2)
+                {
+                    // if a facet of Z is strictly better than one in Z', we loose
+                    relation_t rel = pdbm_relation(f2, f1, dim);
+                    if (rel == base_SUBSET)
+                    {
+                        return false;
+                    }
+                }
             }
         }
 
