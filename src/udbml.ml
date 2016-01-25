@@ -35,6 +35,7 @@ struct
   let _ = _register_carray ()
 
   external to_c : int array -> int -> t = "stub_carray_to_c";;
+  external to_string : t -> string = "stub_carray_to_string";;
 end
 
 

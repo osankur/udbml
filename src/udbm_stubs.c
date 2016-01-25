@@ -313,6 +313,19 @@ stub_carray_to_c(value v, value size)
     CAMLreturn(res);
 }
 
+extern "C" CAMLprim value
+stub_carray_to_string(value v)
+{
+    CAMLparam1(v);
+    std::vector<int> & d = *get_cvector(v);
+    std::stringstream res;
+    for (auto &i : d)
+    {
+        res << i << ",";
+    }
+    CAMLreturn(caml_copy_string(res.str().c_str()));
+}
+
 // register carray custom operations (required for the custom deserialization function)
 extern "C"
 CAMLprim value
