@@ -1,0 +1,1 @@
+SUBDIRS = uppaal-dbm src

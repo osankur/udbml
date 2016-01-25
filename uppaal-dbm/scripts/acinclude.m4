@@ -42,35 +42,3 @@ EOF
     AC_DEFINE(CXX_OLD_STREAMBUF,1,[Define if the library implementation of streambuf have public interface to override])
   fi
 ])
-
-
-AC_DEFUN([UA_CXX_SLIST],
-[
-  AC_CHECK_HEADER(slist, [AC_DEFINE(HAVE_SLIST,1,[Define if slist is not in ext])],
-  [
-    AC_CHECK_HEADER(ext/slist,
-      [
-	AC_DEFINE(HAVE_EXT_SLIST,1,[Define if slist is in ext])
-	AC_CACHE_CHECK([slist namespace], ua_cv_cxx_slist_namespace,
-        [
-  	  AC_LANG_SAVE
-          AC_LANG_CPLUSPLUS
-
-          cat > conftest.$ac_ext <<EOF
-#include <ext/slist>
-__gnu_cxx::slist<int> test;
-EOF
-          if AC_TRY_EVAL(ac_compile); then
-      	    ua_cv_cxx_slist_namespace="__gnu_cxx"
-          else
-            ua_cv_cxx_slist_namespace=""
-          fi
-          AC_LANG_RESTORE
-        ])
-
-	if test -n $ua_cv_cxx_slist_namespace; then
-	  AC_DEFINE_UNQUOTED(CXX_SLIST_NAMESPACE,$ua_cv_cxx_slist_namespace,[Define to the namespace of slist (if not in std)])
-	fi
-     ])
-   ])  
-])
