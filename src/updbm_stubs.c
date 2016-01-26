@@ -483,6 +483,10 @@ private:
     cindex_t _size; // the size of the current subset
 };
 
+// forward declaration
+bool
+pdbm_intersect_dbm(pdbm_t & d, const raw_t * const dbm);
+
 // check whether a priced zone dominates another
 // this is based on the exploration of all subsets of clocks
 bool
@@ -543,17 +547,25 @@ pdbm_square_inclusion_exp(const pdbm_t &z1, const pdbm_t &z2, const std::vector<
                 }
             }
 
-            // for each pair of facets
+            // if a facet of Z is not subsumed by those of Z', we loose
             for (pdbm_t f1 : facets1)
             {
+                fed_t cover;
                 for (pdbm_t f2 : facets2)
                 {
-                    // if a facet of Z is strictly better than one in Z', we loose
-                    relation_t rel = pdbm_relation(f2, f1, dim);
-                    if (rel == base_SUBSET)
+                    pdbm_t f12 = f1;
+                    if (pdbm_intersect_dbm(f12, f2.const_dbm()))
                     {
-                        return false;
+                        relation_t rel = pdbm_relation(f12, f2, dim);
+                        if (rel == base_SUBSET || rel == base_EQUAL)
+                        {
+                            cover |= dbm_t(f12.const_dbm(), dim);
+                        }
                     }
+                }
+                if (!cover.ge(f1.const_dbm(), dim))
+                {
+                    return false;
                 }
             }
         }
@@ -657,14 +669,14 @@ stub_pfed_has(value t, value z)
 
 // returns true iff d is non-empty afterwards
 bool
-pdbm_intersect_dbm(pdbm_t & d, const dbm_t & dbm)
+pdbm_intersect_dbm(pdbm_t & d, const raw_t * const dbm)
 {
     cindex_t dim = d.getDimension();
     pdbm_t old_d = d;
     raw_t * rdbm = pdbm_getMutableMatrix(d, dim);
     // TODO d1 and d2 should be non-empty
     // dbm_intersection returns true iff d1 is non-empty afterwards
-    bool res = dbm_intersection(rdbm, dbm.const_dbm(), dim);
+    bool res = dbm_intersection(rdbm, dbm, dim);
     if (!res) return false;
 
     // otherwise
@@ -686,7 +698,7 @@ stub_pfed_intersect_dbm(value v, value d)
     const dbm_t & dbm = *get_dbm_ptr(d);
     for (pfed_t::iterator it = fed.beginMutable(); it != fed.endMutable(); ++it)
     {
-        bool not_empty = pdbm_intersect_dbm(*it, dbm);
+        bool not_empty = pdbm_intersect_dbm(*it, dbm.const_dbm());
         if (!not_empty)
         {
             it = fed.erase(it);
