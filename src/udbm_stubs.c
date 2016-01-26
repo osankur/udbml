@@ -174,7 +174,6 @@ CAMLprim value
 caml_udbml_register_dbm(value unit)
 {
     CAMLparam1(unit);
-    printf("registering dbm ops\n");
     caml_register_custom_operations(&custom_ops_dbm);
     CAMLreturn(Val_unit);
 }
@@ -332,7 +331,6 @@ CAMLprim value
 caml_udbml_register_carray(value unit)
 {
     CAMLparam1(unit);
-    printf("registering carray ops\n");
     caml_register_custom_operations(&custom_ops_carray);
     CAMLreturn(Val_unit);
 }
