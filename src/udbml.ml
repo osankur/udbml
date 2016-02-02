@@ -22,16 +22,20 @@ struct
   let infty = get_infty()
 
   let string_of_raw = function
-    | (b,_) when b = infty -> "(INF,<)"
-    | (b,DBM_WEAK) -> Printf.sprintf "(%d,<=)" b
-    | (b,DBM_STRICT) -> Printf.sprintf "(%d,<)" b
+    | (b,_) when b = infty -> "<INF"
+    | (b,DBM_WEAK) -> Printf.sprintf "<=%d" b
+    | (b,DBM_STRICT) -> Printf.sprintf "<%d" b
 end
 
 module Carray =
 struct
   type t
 
+  external _register_carray : unit -> unit = "caml_udbml_register_carray";;
+  let _ = _register_carray ()
+
   external to_c : int array -> int -> t = "stub_carray_to_c";;
+  external to_string : t -> string = "stub_carray_to_string";;
 end
 
 

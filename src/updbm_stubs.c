@@ -483,76 +483,9 @@ private:
     cindex_t _size; // the size of the current subset
 };
 
-// a function that builds the product priced zone for a given subset of clocks Y
-// the corresponding function has rates
-//   - r(x)     if x is in Y
-//   r'(x)      if x' is in Y'
-//   - r(x)     if x is in X-Y
-//   - r'(x)    if x' is in X'-Y'
-pdbm_t
-pdbm_build_product(const pdbm_t &z1,
-                   const pdbm_t &z2,
-                   const std::vector<int> &mbounds,
-                   const clock_po_iterator &y)
-{
-    assert(z1.getDimension() == z2.getDimension());
-    int dim = z1.getDimension();
-    int ndim = 2*dim-1-y.count();
-    // create a new dbm of size ndim (the reference clock and those in Y need not be duplicated)
-    pdbm_t result = pdbm_t(ndim);
-    // initialize
-    pdbm_init(result, ndim);
-
-    bool non_empty = true;
-    // constrain it
-    for (int i = 0, ki = dim; i < dim; ++i)
-    {
-        int ii = (i && !y.is_in(i)) ? ki++ : i;
-        if (i > 0)
-        {
-            // constrain it with x <= M for x in Y, x > M otherwise
-            if (y.is_in(i))
-            {
-                non_empty = pdbm_constrain1(result, ndim, i, 0, dbm_boundbool2raw(mbounds[i], false));
-            }
-            else
-            {
-                non_empty = pdbm_constrain1(result, ndim, 0, i, dbm_boundbool2raw(-mbounds[i], true));
-                non_empty = pdbm_constrain1(result, ndim, 0, ii, dbm_boundbool2raw(-mbounds[i], true));
-            }
-        }
-
-        for (int j = 0, kj = dim; j < dim; ++j)
-        {
-            int jj = (j && !y.is_in(j)) ? kj++ : j;
-            // constrain from z1
-            non_empty = pdbm_constrain1(result, ndim, i, j, z1(i,j));
-            // constrain from z2
-            non_empty = pdbm_constrain1(result, ndim, ii, jj, z2(i,j));
-        }
-    }
-
-    // set the rates
-    // WARNING  when building the corresponding cost function
-    //          negate the function, so that its infimum corresponds to the supremum we want
-    //          (the API computes the infimum rather than the supremum)
-    for (int i = 1, ki = dim; i < dim; ++i)
-    {
-        if (y.is_in(i))
-        {
-            pdbm_setRate(result, ndim, i, pdbm_getRate(z1, dim, i) - pdbm_getRate(z2, dim, i));
-        }
-        else
-        {
-            pdbm_setRate(result, ndim, i, pdbm_getRate(z1, dim, i));
-            pdbm_setRate(result, ndim, ki, pdbm_getRate(z2, dim, i));
-            ++ki;
-        }
-    }
-
-    // return the result
-    return result;
-}
+// forward declaration
+bool
+pdbm_intersect_dbm(pdbm_t & d, const raw_t * const dbm);
 
 // check whether a priced zone dominates another
 // this is based on the exploration of all subsets of clocks
@@ -565,7 +498,7 @@ pdbm_square_inclusion_exp(const pdbm_t &z1, const pdbm_t &z2, const std::vector<
         return false;
 
     // get the dimension
-    int dim = z1.getDimension();
+    cindex_t dim = z1.getDimension();
 
     // the clock order for the lhs zone
     clock_po_t preorder(z1, mbounds);
@@ -573,63 +506,68 @@ pdbm_square_inclusion_exp(const pdbm_t &z1, const pdbm_t &z2, const std::vector<
     clock_po_iterator currentY(preorder, dim);
 
     // the main loop
+    // TODO make it parallel, e.g. one thread for each Y
     do
     {
-        // first check whether Z_Y is empty
-        dbm_t zy1(z1.const_dbm(), dim);
+        // first build Z_Y and Z_Y'
+        pdbm_t zy1 = z1;
+        pdbm_t zy2 = z2;
         bool zy1_not_empty = true;
-        for (int i = 1; zy1_not_empty && i < dim; ++i)
+        for (int i = 1; zy1_not_empty && i != dim; ++i)
         {
             if (currentY.is_in(i))
             {
-                zy1_not_empty = zy1.constrain(i, 0, dbm_boundbool2raw(mbounds[i], false));
-            } else {
-                zy1_not_empty = zy1.constrain(0, i, dbm_boundbool2raw(-mbounds[i], true));
-            }
-        }
-
-        // TODO do not build zy1, build the product directly
-        //      zy1 empty iff the product is empty
-
-        if (zy1_not_empty)
-        {
-            // build the product for the current Y
-            pdbm_t prody = pdbm_build_product(z1, z2, mbounds, currentY);
-
-            // to avoid reallocating again and again arrays to store the infimum valuation
-            static std::unordered_map<int, int32_t*> array_cache;
-            auto cacheit = array_cache.find(dim);
-            int32_t * inf_val;
-            if (cacheit == array_cache.end())
-            {
-                // size 2*dim-1 fits all Y (the API require arrays of size at least the dimension
-                // of the product, which is at most 2*dim-1)
-                inf_val = new int32_t[2*dim-1];
-                array_cache[dim] = inf_val;
+                zy1_not_empty = pdbm_constrain1(zy1, dim, i, 0, dbm_boundbool2raw(mbounds[i], false));
+                pdbm_constrain1(zy2, dim, i, 0, dbm_boundbool2raw(mbounds[i], false));
             }
             else
             {
-                inf_val = cacheit->second;
+                zy1_not_empty = pdbm_constrain1(zy1, dim, 0, i, dbm_boundbool2raw(-mbounds[i], true));
+                pdbm_constrain1(zy2, dim, 0, i, dbm_boundbool2raw(-mbounds[i], true));
             }
-            pdbm_getInfimumValuation(prody, prody.getDimension(), inf_val, NULL);
+        }
 
-            // use this valuation to evaluate the searched sup for the current Y
-            // inf_val = (v0,v0') and local_sup = z2(v0') - z1(v0)
-            int32_t local_sup = - pdbm_getCostOfValuation(z1, dim, inf_val);
-            // reuse inf_val for v0', to avoid allocating yet another vector
-            for (int i = 1, ki = dim; i < dim; ++i)
+        // if Z_Y is not empty
+        if (zy1_not_empty)
+        {
+            // relax, i.e. take the topological closure
+            pdbm_relax(zy1, dim);
+            pdbm_relax(zy2, dim);
+
+            // use feds for which all the needed operations are already implemented
+            pfed_t facets1(zy1, dim), facets2(zy2, dim);
+
+            // for each clock not in Y, do a projection
+            for (cindex_t cl = 1; cl != dim; ++cl)
             {
-                if (! currentY.is_in(i))
+                if (!currentY.is_in(cl))
                 {
-                    inf_val[i] = inf_val[ki];
-                    ++ki;
+                    facets1.updateValue(cl, 0);
+                    facets2.updateValue(cl, 0);
                 }
             }
-            local_sup += pdbm_getCostOfValuation(z2, dim, inf_val);
 
-            // if positive, return early
-            if (local_sup > 0)
-                return false;
+            // if a facet of Z is not subsumed by those of Z', we loose
+            for (pdbm_t f1 : facets1)
+            {
+                fed_t cover;
+                for (pdbm_t f2 : facets2)
+                {
+                    pdbm_t f12 = f1;
+                    if (pdbm_intersect_dbm(f12, f2.const_dbm()))
+                    {
+                        relation_t rel = pdbm_relation(f12, f2, dim);
+                        if (rel == base_SUBSET || rel == base_EQUAL)
+                        {
+                            cover |= dbm_t(f12.const_dbm(), dim);
+                        }
+                    }
+                }
+                if (!cover.ge(f1.const_dbm(), dim))
+                {
+                    return false;
+                }
+            }
         }
 
         // go to next Y
@@ -731,14 +669,14 @@ stub_pfed_has(value t, value z)
 
 // returns true iff d is non-empty afterwards
 bool
-pdbm_intersect_dbm(pdbm_t & d, const dbm_t & dbm)
+pdbm_intersect_dbm(pdbm_t & d, const raw_t * const dbm)
 {
     cindex_t dim = d.getDimension();
     pdbm_t old_d = d;
     raw_t * rdbm = pdbm_getMutableMatrix(d, dim);
     // TODO d1 and d2 should be non-empty
     // dbm_intersection returns true iff d1 is non-empty afterwards
-    bool res = dbm_intersection(rdbm, dbm.const_dbm(), dim);
+    bool res = dbm_intersection(rdbm, dbm, dim);
     if (!res) return false;
 
     // otherwise
@@ -747,7 +685,7 @@ pdbm_intersect_dbm(pdbm_t & d, const dbm_t & dbm)
     int32_t * offset = new int32_t[dim];
     offset[0] = 0;
     pdbm_getOffset(d, dim, offset);
-    int32_t cost = pdbm_getCostOfValuation(old_d, dim, offset);
+    int32_t cost = pdbm_getCostOfVertex(old_d, dim, offset);
     pdbm_setCostAtOffset(d, dim, cost);
     delete[] offset;
     return true;
@@ -760,7 +698,7 @@ stub_pfed_intersect_dbm(value v, value d)
     const dbm_t & dbm = *get_dbm_ptr(d);
     for (pfed_t::iterator it = fed.beginMutable(); it != fed.endMutable(); ++it)
     {
-        bool not_empty = pdbm_intersect_dbm(*it, dbm);
+        bool not_empty = pdbm_intersect_dbm(*it, dbm.const_dbm());
         if (!not_empty)
         {
             it = fed.erase(it);
@@ -791,9 +729,9 @@ stub_pfed_set_empty(value t)
 }
 
 extern "C" CAMLprim value
-stub_pfed_up(value v)
+stub_pfed_up(value v, value rate)
 {
-    get_pfed_ptr(v)->up(1);
+    get_pfed_ptr(v)->up(Int_val(rate));
     return Val_unit;
 }
 

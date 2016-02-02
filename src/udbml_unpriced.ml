@@ -36,6 +36,10 @@ module Dbm =
 struct
   type t
   include Udbml.Basic_types
+
+  external _register_dbm : unit -> unit = "caml_udbml_register_dbm";;
+  let _ = _register_dbm ()
+
   external _max_dim_power : unit -> int = "stub_dbm_max_dim_power" "noalloc";;
   external _max_dim : unit -> int = "stub_dbm_max_dim" "noalloc";;
   

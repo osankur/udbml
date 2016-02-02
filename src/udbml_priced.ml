@@ -56,7 +56,7 @@ struct
   external add_dbm : t -> PDbm.t -> unit = "stub_pfed_add_dbm" "noalloc";;
   external has : t -> PDbm.t -> bool = "stub_pfed_has";;
 
-  external up : t -> unit = "stub_pfed_up" "noalloc";;
+  external up : t -> int -> unit = "stub_pfed_up" "noalloc";;
   external update_value : t -> cindex_t -> bound_t -> unit = "stub_pfed_update_value" "noalloc";;
   external intersect_dbm : t -> Udbml_unpriced.Dbm.t -> unit = "stub_pfed_intersect_dbm" "noalloc";;
 
