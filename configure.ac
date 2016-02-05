@@ -1,5 +1,5 @@
 # AC_INIT (package, version, [bug-report], [tarname])
-AC_INIT(udbml,0.1,[Maximilien.Colange@lsv.fr])
+AC_INIT(udbml,0.2,[Maximilien.Colange@lsv.fr])
 
 # We use automake to build makefiles
 AM_INIT_AUTOMAKE([foreign -Wall, subdir-objects])
