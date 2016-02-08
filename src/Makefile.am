@@ -17,7 +17,7 @@ OCAMLBUILD=ocamlbuild -use-ocamlfind -classic-display -build-dir $(BUILDDIR)
 
 UDBML_PREFIX=${prefix}
 
-CXX_FLAGS=-xc++ -std=c++11 -fPIC -O3 -DNDEBUG -I@abs_top_srcdir@/src
+CXX_FLAGS=-xc++ -std=c++11 -fPIC -I@abs_top_srcdir@/src $(CFLAGS)
 OCAML_CXX_FLAGS=$(foreach i,$(CXX_FLAGS),-ccopt $i)
 
 all-local:

@@ -14,6 +14,9 @@ AC_SUBST([UPPAAL_INCLUDEDIR])
 AC_SUBST([OCAML_INCLUDEDIR])
 AC_SUBST([UPPAAL_LIBDIR])
 
+AC_PROG_CC
+AC_PROG_CXX
+
 # the files to be produced
 AC_CONFIG_FILES([Makefile uppaal-dbm/Makefile src/Makefile])
 
