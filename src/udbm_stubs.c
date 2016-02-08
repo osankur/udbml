@@ -748,8 +748,7 @@ dbm_closure_leq(const raw_t * const dr1, const raw_t * const dr2, cindex_t dim,
             while (y >= 0)
             {
                 const raw_t & zpyx = dr2[n];
-                // NB: Z'_{y,x} + (<, -L_y) < Z_{0,x} iff value(Z'_{y,x}) - L_y <= value(Z_{0,x})
-                if ((zpyx < dr1[n]) && ((dbm_raw2bound(zpyx) - lbounds[y]) <= vz0x)) {
+                if ((zpyx < dr1[n]) && (dbm_addRawRaw(zpyx, dbm_boundbool2raw(-lbounds[y], true)) < z0x)) {
                     return false;
                 } else {
                     --y;
