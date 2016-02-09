@@ -174,7 +174,6 @@ CAMLprim value
 caml_udbml_register_dbm(value unit)
 {
     CAMLparam1(unit);
-    printf("registering dbm ops\n");
     caml_register_custom_operations(&custom_ops_dbm);
     CAMLreturn(Val_unit);
 }
@@ -313,13 +312,25 @@ stub_carray_to_c(value v, value size)
     CAMLreturn(res);
 }
 
+extern "C" CAMLprim value
+stub_carray_to_string(value v)
+{
+    CAMLparam1(v);
+    std::vector<int> & d = *get_cvector(v);
+    std::stringstream res;
+    for (auto &i : d)
+    {
+        res << i << ",";
+    }
+    CAMLreturn(caml_copy_string(res.str().c_str()));
+}
+
 // register carray custom operations (required for the custom deserialization function)
 extern "C"
 CAMLprim value
 caml_udbml_register_carray(value unit)
 {
     CAMLparam1(unit);
-    printf("registering carray ops\n");
     caml_register_custom_operations(&custom_ops_carray);
     CAMLreturn(Val_unit);
 }
@@ -737,8 +748,7 @@ dbm_closure_leq(const raw_t * const dr1, const raw_t * const dr2, cindex_t dim,
             while (y >= 0)
             {
                 const raw_t & zpyx = dr2[n];
-                // NB: Z'_{y,x} + (<, -L_y) < Z_{0,x} iff value(Z'_{y,x}) - L_y <= value(Z_{0,x})
-                if ((zpyx < dr1[n]) && ((dbm_raw2bound(zpyx) - lbounds[y]) <= vz0x)) {
+                if ((zpyx < dr1[n]) && (dbm_addRawRaw(zpyx, dbm_boundbool2raw(-lbounds[y], true)) < z0x)) {
                     return false;
                 } else {
                     --y;
