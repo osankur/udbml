@@ -415,7 +415,7 @@ void pdbm_up(PDBM &pdbm, cindex_t dim);
  *              reference clock. 
  * @post  The priced DBM is closed.
  */
-void pdbm_upZero(PDBM &pdbm, cindex_t dim, uint32_t rate, cindex_t zero);
+void pdbm_upZero(PDBM &pdbm, cindex_t dim, int32_t rate, cindex_t zero);
 
 /**
  * Updates \a clock to \a value. This is only legitimate if the
@@ -426,9 +426,10 @@ void pdbm_upZero(PDBM &pdbm, cindex_t dim, uint32_t rate, cindex_t zero);
  * @param clock is the index of the clock to reset.
  * @param value is the value to which to set \a clock.
  * @pre   pdbm_getRate(pdbm, dim, clock) == 0
+ * @pre   value >= 0 (int type kept for compatibility)
  * @post  The priced DBM is closed.
  */
-void pdbm_updateValue(PDBM &pdbm, cindex_t dim, cindex_t clock, uint32_t value);
+void pdbm_updateValue(PDBM &pdbm, cindex_t dim, cindex_t clock, int32_t value);
 
 /**
  * Updates \a clock to \a value. This is only legitimate if the clock
@@ -441,11 +442,12 @@ void pdbm_updateValue(PDBM &pdbm, cindex_t dim, cindex_t clock, uint32_t value);
  * @param value is the value to which to set \a clock.
  * @param zero  is a clock (possibly zero) forming a zero cycle 
  *              with \a clock. 
+ * @pre   value >= 0 (int type kept for compatibility)
  * @post  The priced DBM is closed.
  * @post  pdbm_getRate(pdbm, dim, clock) == 0
  */
 void pdbm_updateValueZero(PDBM &pdbm, cindex_t dim, 
-                          cindex_t clock, uint32_t value, cindex_t zero);
+                          cindex_t clock, int32_t value, cindex_t zero);
 
 /**
  * Unfinished extrapolation function.
@@ -627,7 +629,7 @@ const int32_t *pdbm_getRates(const PDBM pdbm, cindex_t dim);
  * @param pdbm  is a closed priced DBM of dimension \a dim.
  * @param dim   is the dimension of \a pdbm. 
  */
-uint32_t pdbm_getCostAtOffset(const PDBM pdbm, cindex_t dim);
+int32_t pdbm_getCostAtOffset(const PDBM pdbm, cindex_t dim);
 
 /**
  * Sets the cost at the offset point. 
@@ -641,7 +643,7 @@ uint32_t pdbm_getCostAtOffset(const PDBM pdbm, cindex_t dim);
  * @param dim   is the dimension of \a pdbm. 
  * @param value is the new cost of the offset point.
  */
-void pdbm_setCostAtOffset(PDBM &pdbm, cindex_t dim, uint32_t value);
+void pdbm_setCostAtOffset(PDBM &pdbm, cindex_t dim, int32_t value);
 
 /**
  * Returns true if the DBM is valid. Useful for debugging.

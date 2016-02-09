@@ -411,7 +411,7 @@ static Node *findNthPredecessor(Node *node, int32_t n)
  */
 static inline bool isPredecessorOf(Node *n, Node *m)
 {
-    return n == findNthPredecessor(m, m->depth - n->depth);
+    return n == findNthPredecessor(m, (int32_t) (m->depth - n->depth));
 }
 
 /**
@@ -420,7 +420,7 @@ static inline bool isPredecessorOf(Node *n, Node *m)
  * 
  */
 static void updateNonRootSubtree(Node *rootNode, Node *nonRootNode, Node *leave,
-                                 bool sourceInRootSubtree, uint32_t flow)
+                                 bool sourceInRootSubtree, int32_t flow)
 {
     /*
      * Update thread information NOT COMPLETELY SURE ABOUT CORRECTNESS
@@ -495,7 +495,7 @@ static void updateNonRootSubtree(Node *rootNode, Node *nonRootNode, Node *leave,
      */
 
     Node *tmppred1, *tmppred2, *newi;
-    uint32_t tmpflow1, tmpflow2;
+    int32_t tmpflow1, tmpflow2;
     bool tmpinbound1, tmpinbound2;
     tmppred1 = rootNode;
     tmpflow1 = flow;
@@ -545,7 +545,7 @@ static void updateNonRootSubtree(Node *rootNode, Node *nonRootNode, Node *leave,
  * and subtract flow from arcs in the opposite direction
  * of (k,l).
  */
-static void updateFlowInCycle(Node *k, Node *l, Node *root, uint32_t flowToAugment)
+static void updateFlowInCycle(Node *k, Node *l, Node *root, int32_t flowToAugment)
 {
     if (flowToAugment > 0)
     {
@@ -574,7 +574,7 @@ static void updateSpanningTree(Node *k, Node *l, Node *leave, Node *root,
                                int32_t costEnter)
 {
     int32_t reducedCostEnter = costEnter - k->potential + l->potential;
-    uint32_t flowToAugment = leave->flow;
+    int32_t flowToAugment = leave->flow;
     updateFlowInCycle(k, l, root, flowToAugment);
     if (!isPredecessorOf(leave, k))
     {
@@ -654,7 +654,7 @@ static arc_t *enteringArcDanzig(arc_t *firstArc, arc_t *lastArc,
  */
 static Node *discoverCycleRoot(Node *k, Node *l)
 {
-    int32_t diff = k->depth - l->depth;
+    int32_t diff = (int32_t) (k->depth - l->depth);
     k = findNthPredecessor(k, diff);
     l = findNthPredecessor(l, -diff);
     while (k != l)
@@ -743,7 +743,7 @@ static void testAndRemoveArtificialArcs(const raw_t *dbm, const int32_t *rates,
             inbound(i) = true;
                         
             Node *tmp = nodes[i].thread;
-            uint32_t rateSum = b(i);
+            int32_t rateSum = b(i);
                         
             int32_t minPotential = dbm_INFINITY + constraintValue(0,i);
 
@@ -871,7 +871,7 @@ static void infimumNetSimplex(const raw_t *dbm, uint32_t dim,
  * the infimum-achieving point in the zone.
  * 
  */
-int32_t pdbm_infimum(const raw_t *dbm, uint32_t dim, uint32_t offsetCost, 
+int32_t pdbm_infimum(const raw_t *dbm, uint32_t dim, int32_t offsetCost,
                      const int32_t *rates)
 {
     if (allPositive(rates, rates + dim)) 
@@ -902,7 +902,7 @@ int32_t pdbm_infimum(const raw_t *dbm, uint32_t dim, uint32_t offsetCost,
     return solution;
 }
 
-void pdbm_infimum(const raw_t *dbm, uint32_t dim, uint32_t offsetCost, 
+void pdbm_infimum(const raw_t *dbm, uint32_t dim, int32_t offsetCost,
                   const int32_t *rates, int32_t *valuation)
 {
     if (allPositive(rates, rates + dim)) 
