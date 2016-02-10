@@ -44,8 +44,8 @@
 struct PDBM_s
 {
     uint32_t count;
-    uint32_t cost;
-    uint32_t infimum;
+    int32_t cost;
+    int32_t infimum;
     int32_t data[];
 };
 
@@ -267,7 +267,7 @@ bool pdbm_constrain1(
 
     /* Compute the cost at the origin.
      */
-    uint32_t cost = pdbm_cost(pdbm);
+    int32_t cost = pdbm_cost(pdbm);
     int32_t *rates = pdbm_rates(pdbm);    
     for (uint32_t k = 1; k < dim; k++) 
     {
@@ -307,7 +307,7 @@ bool pdbm_constrainN(
             pdbm_prepare(pdbm, dim);
 
             dbm = pdbm_matrix(pdbm);
-            uint32_t cost = pdbm_cost(pdbm);
+            int32_t cost = pdbm_cost(pdbm);
             int32_t *rates = pdbm_rates(pdbm);
 
             for (uint32_t k = 1; k < dim; k++) 
@@ -344,7 +344,7 @@ bool pdbm_constrainN(
  * @param dim    is the dimension of \a dbm1 and \a dbm2.
  */
 static int32_t costAtOtherOffset(
-    const raw_t *dbm1, const int32_t *rates1, uint32_t cost1,
+    const raw_t *dbm1, const int32_t *rates1, int32_t cost1,
     const raw_t *dbm2, cindex_t dim)
 {
     assert(dbm1 && dbm2 && rates1 && dim);
@@ -406,8 +406,8 @@ relation_t pdbm_relation(const PDBM pdbm1, const PDBM pdbm2, cindex_t dim)
     raw_t   *dbm2   = pdbm_matrix(pdbm2);
     int32_t *rates1 = pdbm_rates(pdbm1);
     int32_t *rates2 = pdbm_rates(pdbm2);
-    uint32_t cost1  = pdbm_cost(pdbm1);
-    uint32_t cost2  = pdbm_cost(pdbm2);
+    int32_t cost1   = pdbm_cost(pdbm1);
+    int32_t cost2   = pdbm_cost(pdbm2);
 
     int32_t c, d;
 
@@ -519,7 +519,7 @@ relation_t pdbm_relationWithMinDBM(const PDBM pdbm1, cindex_t dim,
     assert(pdbm1 && pdbm2 && dim && dbm2);
 
     raw_t    *dbm1   = pdbm_matrix(pdbm1);
-    uint32_t  cost1  = pdbm_cost(pdbm1);
+    int32_t  cost1   = pdbm_cost(pdbm1);
     int32_t  *rates1 = pdbm_rates(pdbm1);
 
     int32_t c, d;
@@ -527,7 +527,7 @@ relation_t pdbm_relationWithMinDBM(const PDBM pdbm1, cindex_t dim,
     /* We know how the cost and the rates are encoded in a mingraph:
      * see writeToMinDBMWithOffset and readFromMinDBM. 
      */
-    uint32_t       cost2  = pdbm2[0];
+    int32_t       cost2   = pdbm2[0];
     const int32_t *rates2 = pdbm2 + 2;
 
     /* dbm_relationWithMinDBM will in some cases unpack pdbm2 into
@@ -649,7 +649,7 @@ int32_t pdbm_getInfimum(const PDBM pdbm, cindex_t dim)
 {
     assert(pdbm && dim);
     assert(dbm_isValid(pdbm_matrix(pdbm), dim));
-    uint32_t cache = pdbm_cache(pdbm);
+    int32_t cache = pdbm_cache(pdbm);
     if (cache == INVALID)
     {
         pdbm_cache((PDBM)pdbm) = cache = 
@@ -787,7 +787,7 @@ void pdbm_up(PDBM &pdbm, cindex_t dim)
     assertx(pdbm_isValid(pdbm, dim));
 }
 
-void pdbm_upZero(PDBM &pdbm, cindex_t dim, uint32_t rate, cindex_t zero)
+void pdbm_upZero(PDBM &pdbm, cindex_t dim, int32_t rate, cindex_t zero)
 {
     assert(pdbm && dim && zero > 0 && zero < dim);
     assert(pdbm_areOnZeroCycle(pdbm, dim, 0, zero));
@@ -804,8 +804,9 @@ void pdbm_upZero(PDBM &pdbm, cindex_t dim, uint32_t rate, cindex_t zero)
     assertx(pdbm_isValid(pdbm, dim));
 }
 
-void pdbm_updateValue(PDBM &pdbm, cindex_t dim, cindex_t clock, uint32_t value)
+void pdbm_updateValue(PDBM &pdbm, cindex_t dim, cindex_t clock, int32_t value)
 {
+    assert(value >= 0);
     assert(pdbm && dim && clock < dim);
     assert(pdbm_getRate(pdbm, dim, clock) == 0);
 
@@ -817,8 +818,9 @@ void pdbm_updateValue(PDBM &pdbm, cindex_t dim, cindex_t clock, uint32_t value)
 }
 
 void pdbm_updateValueZero(PDBM &pdbm, cindex_t dim, 
-                          cindex_t clock, uint32_t value, cindex_t zero)
+                          cindex_t clock, int32_t value, cindex_t zero)
 {
+    assert(value >= 0);
     assert(pdbm && dim && clock < dim && zero < dim);
     assert(pdbm_areOnZeroCycle(pdbm, dim, clock, zero));
 
@@ -1095,14 +1097,14 @@ int32_t pdbm_getRate(const PDBM pdbm, cindex_t dim, cindex_t clock)
     return pdbm_rates(pdbm)[clock];
 }
 
-uint32_t pdbm_getCostAtOffset(const PDBM pdbm, cindex_t dim)
+int32_t pdbm_getCostAtOffset(const PDBM pdbm, cindex_t dim)
 {
     assert(pdbm && dim);
 
     return pdbm_cost(pdbm);
 }
 
-void pdbm_setCostAtOffset(PDBM &pdbm, cindex_t dim, uint32_t value)
+void pdbm_setCostAtOffset(PDBM &pdbm, cindex_t dim, int32_t value)
 {
     assert(pdbm && dim);
 
@@ -1345,7 +1347,7 @@ bool pdbm_isValid(const PDBM pdbm, cindex_t dim)
 
     raw_t   *dbm   = pdbm_matrix(pdbm);
     int32_t *rates = pdbm_rates(pdbm);
-    uint32_t cost  = pdbm_cost(pdbm);
+    int32_t  cost  = pdbm_cost(pdbm);
     int32_t  cache = pdbm_cache(pdbm);
     int32_t  inf   = pdbm_infimum(dbm, dim, cost, rates);
 
