@@ -1,8 +1,11 @@
 all-local:
-	cd modules && $(MAKE) $(AM_MAKEFLAGS) && $(MAKE) $(AM_MAKEFLAGS) install
+	$(MAKE) -C modules $(AM_MAKEFLAGS)
+
+install-data-local:
+	$(MAKE) -C modules $(AM_MAKEFLAGS) install
 
 uninstall-local:
 	rm -rf ${prefix}/uppaal
 
-clean:
-	cd modules && $(MAKE) $(AM_MAKEFLAGS) clean
+clean-local:
+	$(MAKE) -C modules $(AM_MAKEFLAGS) clean

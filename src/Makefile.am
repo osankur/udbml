@@ -1,9 +1,8 @@
-UPPAAL_INCLUDES=@UPPAAL_INCLUDEDIR@
+UPPAAL_INCLUDES=-I@abs_top_srcdir@/uppaal-dbm/modules/include
+UDBML_INCLUDES=$(foreach i,$(UPPAAL_INCLUDES) $(OCAML_INCLUDEDIR),-ccopt $i)
 OCAML_INCLUDES=-I@OCAML_INCLUDEDIR@
 
-UDBML_INCLUDES=$(foreach i,$(UPPAAL_INCLUDES) $(OCAML_INCLUDEDIR),-ccopt $i)
-
-UPPAALLIB=@UPPAAL_LIBDIR@
+UPPAALLIB=-L${prefix}/uppaal/lib -ludbm
 
 MODULES=udbml_unpriced udbml_priced udbml
 MODULES_FILES=$(MODULES:=.cmi) $(MODULES:=.cmx)

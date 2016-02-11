@@ -6,19 +6,19 @@ AM_INIT_AUTOMAKE([foreign -Wall, subdir-objects])
 
 AC_CONFIG_SUBDIRS([uppaal-dbm/modules])
 
-UPPAAL_INCLUDEDIR=-I${prefix}/uppaal/include
 OCAML_INCLUDEDIR=`ocamlc -where`
-UPPAAL_LIBDIR="-L${prefix}/uppaal/lib -ludbm"
 
-AC_SUBST([UPPAAL_INCLUDEDIR])
 AC_SUBST([OCAML_INCLUDEDIR])
-AC_SUBST([UPPAAL_LIBDIR])
 
 AC_PROG_CC
 AC_PROG_CXX
 
+# Use libtool
+AM_PROG_AR
+LT_INIT
+
 # the files to be produced
-AC_CONFIG_FILES([Makefile uppaal-dbm/Makefile src/Makefile])
+AC_CONFIG_FILES([Makefile uppaal-dbm/Makefile uppaal-dbm/modules/lib/Makefile src/Makefile])
 
 AC_PREFIX_DEFAULT(`ocamlfind printconf destdir`)
 
