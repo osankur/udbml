@@ -21,6 +21,9 @@ AC_LANG_CPLUSPLUS
 AC_CANONICAL_HOST
 AC_CANONICAL_TARGET
 
+# We use automake to build makefiles
+AM_INIT_AUTOMAKE([foreign -Wall, subdir-objects])
+
 # Get OS. Supported: Cygwin Solaris Linux Darwin
 # Cygwin+Solaris ok
 # Linux returns GNU/Linux
@@ -43,10 +46,6 @@ CFLAGS="$CFLAGS $CPPFLAGS $CXXFLAGS"
 if test "$OS" == "Cygwin"; then
   CFLAGS="$CFLAGS -DLIBXML_STATIC"
 fi
-
-# Use libtool
-AM_PROG_AR
-LT_INIT
 
 # Things to generate
 
@@ -77,6 +76,8 @@ AC_PROG_CC
 AC_PROG_CXX
 AC_PROG_LEX
 AC_PROG_YACC
+AM_PROG_AR
+AC_PROG_RANLIB
 AC_PROG_INSTALL
 AC_PATH_PROG(XML_CONFIG, 
              [xml2-config], 
