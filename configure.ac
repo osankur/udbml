@@ -1,5 +1,5 @@
 # AC_INIT (package, version, [bug-report], [tarname])
-AC_INIT(udbml,0.1,[Maximilien.Colange@lsv.fr])
+AC_INIT(udbml,0.2,[Maximilien.Colange@lsv.fr])
 
 # We use automake to build makefiles
 AM_INIT_AUTOMAKE([foreign -Wall, subdir-objects])
@@ -13,6 +13,9 @@ UPPAAL_LIBDIR="-L${prefix}/uppaal/lib -ludbm"
 AC_SUBST([UPPAAL_INCLUDEDIR])
 AC_SUBST([OCAML_INCLUDEDIR])
 AC_SUBST([UPPAAL_LIBDIR])
+
+AC_PROG_CC
+AC_PROG_CXX
 
 # the files to be produced
 AC_CONFIG_FILES([Makefile uppaal-dbm/Makefile src/Makefile])
