@@ -48,7 +48,7 @@ help:
 	@echo " %.tests	: make tests of a given module"
 	@echo " %.clean : clean a given module"
 
-all: libs $(MODULES:.lib=.testonly)
+all: libs libudbm.a $(MODULES:.lib=.testonly)
 
 tests: $(MODULES:.lib=.tests)
 
@@ -86,8 +86,10 @@ cleanall: clean
 	 $(MAKE) -C $(DSTDIR)/$*/tests $(MFLAGS); \
 	fi
 
-install: base.lib dbm.lib debug.lib hash.lib
-	@.scripts/mergelibs.sh
+libudbm.a: base.lib dbm.lib debug.lib hash.lib
+	@$(MAKE) -C lib libudbm.a $(MFLAGS)
+
+install: libudbm.a
 	@echo "Installing in $(PREFIX)"
 	@install -d $(PREFIX)/uppaal/include
 	@install -d $(PREFIX)/uppaal/lib

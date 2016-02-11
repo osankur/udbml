@@ -1,7 +1,4 @@
-# Filename: configure.ac.in
-#
-# Input file to generate configure.ac.
-# The @xx@ tags are replaced by proper values.
+# Filename: configure.ac
 
 # Init 
 
@@ -20,6 +17,9 @@ AC_LANG_CPLUSPLUS
 
 AC_CANONICAL_HOST
 AC_CANONICAL_TARGET
+
+# We use automake to build makefiles
+AM_INIT_AUTOMAKE([foreign -Wall, subdir-objects])
 
 # Get OS. Supported: Cygwin Solaris Linux Darwin
 # Cygwin+Solaris ok
@@ -52,6 +52,7 @@ AC_CONFIG_COMMANDS([lib],[install -d lib])
 AC_CONFIG_FILES(makefile:../scripts/makefile.in)
 AC_CONFIG_FILES(.config:../scripts/config.in)
 AC_CONFIG_FILES(udbm-config:../scripts/udbm-config.in, [chmod +x udbm-config])
+AC_CONFIG_FILES([lib/Makefile])
 
 # Create symlink from libm.so to /lib/libmso.1 on Solaris such
 # that the binaries can be used on Solaris 9 even when compiled
@@ -72,6 +73,7 @@ AC_PROG_CC
 AC_PROG_CXX
 AC_PROG_LEX
 AC_PROG_YACC
+AM_PROG_AR
 AC_PROG_RANLIB
 AC_PROG_INSTALL
 AC_PATH_PROG(XML_CONFIG, 
@@ -128,8 +130,8 @@ icc*)
 esac
 
 AC_DEFINE(VERSION, "4.1.4 (4761)", [The UPPAAL version number])
-AC_DEFINE(PACKAGE_MONTH, "January", [The release month])
-AC_DEFINE(PACKAGE_YEAR, "2016", [The release year])
+AC_DEFINE(PACKAGE_MONTH, [m4_esyscmd_s([date "+%B"])], [The release month])
+AC_DEFINE(PACKAGE_YEAR, [m4_esyscmd_s([date "+%Y"])], [The release year])
 AC_DEFINE(TIGA_VERSION, "4.1.4-0.16 (4761)", [Tiga version])
 AC_DEFINE(DBM_VERSION, "2.0.8", [Version of the DBM library])
 
