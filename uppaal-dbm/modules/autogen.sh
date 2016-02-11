@@ -12,10 +12,6 @@ for i in $MLIST; do
 done
 ac="$ac])"
 
-# Prepare configure.ac
-
-cat $CONFIG/configure.ac.in | sed -e "s,@MODULE_SETUP@,$ac,g" -e "s,@MODULE_LIST@,$MLIBS,g" | ./version.sh > configure.ac
-
 # Autogen the proper configuration files
 
 aclocal

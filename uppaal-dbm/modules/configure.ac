@@ -1,7 +1,4 @@
-# Filename: configure.ac.in
-#
-# Input file to generate configure.ac.
-# The @xx@ tags are replaced by proper values.
+# Filename: configure.ac
 
 # Init 
 
@@ -133,8 +130,8 @@ icc*)
 esac
 
 AC_DEFINE(VERSION, "4.1.4 (4761)", [The UPPAAL version number])
-AC_DEFINE(PACKAGE_MONTH, "February", [The release month])
-AC_DEFINE(PACKAGE_YEAR, "2016", [The release year])
+AC_DEFINE(PACKAGE_MONTH, [m4_esyscmd_s([date "+%B"])], [The release month])
+AC_DEFINE(PACKAGE_YEAR, [m4_esyscmd_s([date "+%Y"])], [The release year])
 AC_DEFINE(TIGA_VERSION, "4.1.4-0.16 (4761)", [Tiga version])
 AC_DEFINE(DBM_VERSION, "2.0.8", [Version of the DBM library])
 
