@@ -550,7 +550,7 @@ pdbm_square_inclusion_exp(const pdbm_t &z1, const pdbm_t &z2, const std::vector<
             // if a facet of Z is not subsumed by those of Z', we loose
             for (pdbm_t f1 : facets1)
             {
-                fed_t cover;
+                fed_t cover(dim);
                 for (pdbm_t f2 : facets2)
                 {
                     pdbm_t f12 = f1;
