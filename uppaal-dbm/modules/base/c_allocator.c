@@ -54,8 +54,8 @@ void base_free(void *mem, size_t unused1, void *unused2)
  */
 allocator_t base_mallocator =
 {
-    allocData:NULL,
-    allocFunction:base_malloc,
-    deallocFunction:base_free
+    .allocData = NULL,
+    .allocFunction = base_malloc,
+    .deallocFunction = base_free
 };
 

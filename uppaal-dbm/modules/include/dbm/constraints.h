@@ -376,9 +376,9 @@ constraint_t dbm_constraint(cindex_t i, cindex_t j,
 #else
     constraint_t c =
     {
-        i:i,
-        j:j,
-        value:dbm_bound2raw(bound, strictness)
+        .i = i,
+        .j = j,
+        .value = dbm_bound2raw(bound, strictness)
     };
     return c;
 #endif
@@ -399,9 +399,9 @@ constraint_t dbm_constraint2(cindex_t i, cindex_t j,
 #else
     constraint_t c =
     {
-        i:i,
-        j:j,
-        value:dbm_boundbool2raw(bound, isStrict)
+        .i = i,
+        .j = j,
+        .value = dbm_boundbool2raw(bound, isStrict)
     };
     return c;
 #endif

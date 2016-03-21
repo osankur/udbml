@@ -143,9 +143,9 @@ namespace base
         {
             allocator_t c_alloc =
             {
-                allocData:this,
-                allocFunction:base_allocate,
-                deallocFunction:base_deallocate
+                .allocData = this,
+                .allocFunction = base_allocate,
+                .deallocFunction = base_deallocate
             };
             return c_alloc;
         }

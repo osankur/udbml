@@ -367,7 +367,7 @@ void base_delete(void *mem, size_t unused1, void *unused2)
  */
 allocator_t base_newallocator =
 {
-    allocData:NULL,
-    allocFunction:base_new,
-    deallocFunction:base_delete
+    .allocData = NULL,
+    .allocFunction = base_new,
+    .deallocFunction = base_delete
 };
