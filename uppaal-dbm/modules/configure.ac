@@ -42,7 +42,7 @@ test -z "$CFLAGS" && CFLAGS=
 test -z "$CXXFLAGS" && CXXFLAGS=
 
 # We compile c11/c++11
-CFLAGS="-std=c11 $CFLAGS"
+CFLAGS="-std=gnu11 $CFLAGS"
 CXXFLAGS="-std=c++11 $CXXFLAGS"
 
 AC_ARG_ENABLE([debug],
