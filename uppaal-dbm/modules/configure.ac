@@ -5,7 +5,7 @@
 AC_INIT([UPPAAL], [4.1.4 (4761)], [bug-uppaal@list.it.uu.se])
 AC_CONFIG_AUX_DIR(../scripts/)
 AC_CONFIG_SRCDIR(version.sh)
-AC_SUBST(MODULE_LIBS,[" base.lib dbm.lib debug.lib hash.lib io.lib"])
+AC_SUBST(MODULE_LIBS,[" base.lib dbm.lib debug.lib hash.lib"])
 AC_SUBST(DBM_VERSION,["2.0.8"])
 AC_SUBST(TIGA_VERSION,["4.1.4-0.16 (4761)"])
 
@@ -36,12 +36,35 @@ AC_SUBST(OS,$OS)
 AC_SUBST(LINKFLAGS,$LINKFLAGS)
 AC_SUBST(EXTRALIBS,$EXTRALIBS)
 
-# Fix option for boost and merge flags.
-CFLAGS="$CFLAGS $CPPFLAGS $CXXFLAGS"
+# If the user didn't supply a CFLAGS value,
+# set an empty one to prevent autoconf to stick -O2 -g here.
+test -z "$CFLAGS" && CFLAGS=
+test -z "$CXXFLAGS" && CXXFLAGS=
+
+# We compile c11/c++11
+CFLAGS="-std=c11 $CFLAGS"
+CXXFLAGS="-std=c++11 $CXXFLAGS"
+
+AC_ARG_ENABLE([debug],
+              [AC_HELP_STRING([--enable-debug], [turn on debug build])])
+if test "$enable_debug" = yes; then
+  # enable debug symbols, and disable optimizations
+  CFLAGS="-g -O0 $CFLAGS"
+  CXXFLAGS="-g -O0 $CXXFLAGS"
+else
+  CFLAGS="-O3 $CFLAGS"
+  CXXFLAGS="-O3 $CXXFLAGS"
+fi
+
+AC_ARG_ENABLE([assert],
+              [AC_HELP_STRING([--enable-assert], [turn on assertions])])
+if test "$enable_assert" != yes; then
+  CPPFLAGS="$CPPFLAGS -DNDEBUG"
+fi
 
 # Fix option for libxml under Windows (Cygwin).
 if test "$OS" == "Cygwin"; then
-  CFLAGS="$CFLAGS -DLIBXML_STATIC"
+  CPPFLAGS="$CPPFLAGS -DLIBXML_STATIC"
 fi
 
 # Things to generate
@@ -117,15 +140,15 @@ esac
 case $CXX in
 g++*)
 	AC_DEFINE_UNQUOTED(COMPILER_STRING, 
-			   "Compiled with g++-`$CXX -dumpversion | tr -d '\r'` $CFLAGS", 
+			   "Compiled with g++-`$CXX -dumpversion | tr -d '\r'` $CXXFLAGS", 
 		           [A compiler identification string])
 	;;
 icc*)
 	AC_DEFINE_UNQUOTED(COMPILER_STRING, 
-			   "Compiled with icc-`$CXX --version` $CFLAGS")
+			   "Compiled with icc-`$CXX --version` $CXXFLAGS")
 	;;
 *)
-	AC_DEFINE_UNQUOTED(COMPILER_STRING, "Compiled with $CXX $CFLAGS")
+	AC_DEFINE_UNQUOTED(COMPILER_STRING, "Compiled with $CXX $CXXFLAGS")
 	;;
 esac
 

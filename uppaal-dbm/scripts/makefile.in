@@ -7,7 +7,8 @@ export CCC := @CXX@
 export AR := @AR@
 export STRIP = @STRIP@
 export XML_CONFIG := @XML_CONFIG@
-export CFLAGS := @CFLAGS@
+export CFLAGS := @CPPFLAGS@ @CFLAGS@
+export CXXFLAGS := @CPPFLAGS@ @CXXFLAGS@
 export LINKFLAGS := @LINKFLAGS@
 export EXTRALIBS := @EXTRALIBS@
 

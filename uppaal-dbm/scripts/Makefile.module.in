@@ -23,7 +23,8 @@ export CXX := @CXX@
 export AR  := @AR@
 export STRIP := @STRIP@
 export XML_CONFIG := @XML_CONFIG@
-export CFLAGS := @CFLAGS@ $(XFLAGS)
+export CFLAGS := @CPPFLAGS@ @CFLAGS@ $(XFLAGS)
+export CXXFLAGS := @CPPFLAGS@ @CXXFLAGS@
 
 endif
 
@@ -41,9 +42,6 @@ IGNORE     := $(shell if [ -f $(MODULESRC)/.ignore ] ; then cat $(MODULESRC)/.ig
 SOURCES    := $(filter-out $(patsubst %,$(MODULESRC)/%,$(IGNORE)), $(wildcard $(MODULESRC)/*.cpp $(MODULESRC)/*.c))
 OBJS       := $(patsubst %.c,%.o,$(patsubst %.cpp,%.o,$(notdir $(SOURCES)))) $(PARSEROBJS)
 INC        := -I$(MODULEDST) -I$(DSTDIR)/include -I$(MODULESRC) -I$(SRCDIR)/include
-
-# c++11
-CXXFLAGS := -std=c++11
 
 # Fix flags for MacOSX
 DEPCFLAGS  := $(CFLAGS:-isysroot=)
@@ -77,7 +75,8 @@ dep: .depend
 
 show_cflags :
 ifeq (0,${MAKELEVEL})
-	@echo "Compiling $(MODULE) using $(CFLAGS)"
+	@echo "Compiling $(MODULE) using $(CFLAGS) for C"
+	@echo "Compiling $(MODULE) using $(CXXFLAGS) for C++"
 endif
 
 .depend: show_cflags $(GENERATED) $(SOURCES) makedep
@@ -101,16 +100,16 @@ clean :
 	@$(AR) rucs $@ $(OBJS)
 
 %.o : $(MODULESRC)/%.cpp
-	@echo "$(CXX) $(CFLAGS) $(CXXFLAGS) $($@-FLAGS): $(MODULE)/$@"
-	@$(CXX) -o $@ -c $< $(CFLAGS) $(CXXFLAGS) $($@-FLAGS) $(INC)
+	@echo "$(CXX) $(CPPFLAGS) $(CXXFLAGS) $($@-FLAGS): $(MODULE)/$@"
+	@$(CXX) -o $@ -c $< $(CPPFLAGS) $(CXXFLAGS) $($@-FLAGS) $(INC)
 
 %.o : %.cc
-	@echo "$(CXX) $(CFLAGS) $(CXXFLAGS) $($@-FLAGS): $(MODULE)/$@"
-	@$(CXX) -o $@ -c $< $(CFLAGS) $(CXXFLAGS) $($@-FLAGS) $(INC)
+	@echo "$(CXX) $(CPPFLAGS) $(CXXFLAGS) $($@-FLAGS): $(MODULE)/$@"
+	@$(CXX) -o $@ -c $< $(CPPFLAGS) $(CXXFLAGS) $($@-FLAGS) $(INC)
 
 %.o : $(MODULESRC)/%.c
-	@echo "$(CC) $(CFLAGS) $($@-FLAGS): $(MODULE)/$@"
-	@$(CC) -o $@ -c $< $(CFLAGS) $($@-FLAGS) $(INC)
+	@echo "$(CC) $(CPPFLAGS) $(CFLAGS) $($@-FLAGS): $(MODULE)/$@"
+	@$(CC) -o $@ -c $< $(CPPFLAGS) $(CFLAGS) $($@-FLAGS) $(INC)
 
 # Generic rules to generate source (gperf,lex,bison)
 
