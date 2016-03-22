@@ -136,6 +136,8 @@ void base_getMemInfo(meminfo_t info)
 
 #elif __linux__
 
+#include <strings.h>
+
 static const char* info_tags[6] =
 {
     "MemTotal",  /* PHYS_TOTAL */
