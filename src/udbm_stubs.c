@@ -458,7 +458,7 @@ stub_dbm_at(value t, value i, value j){
 	CAMLlocal1(ret);
 	const dbm_t & d = *get_dbm_ptr(t);
 	raw_t r = d(Int_val(i),Int_val(j));
-	printf("Getting value: %d\n", dbm_raw2bound(r));
+	// printf("Getting value: %d\n", dbm_raw2bound(r));
 	// Make pair
 	ret = caml_alloc(2,0);
 	Store_field(ret, 0, Val_int(dbm_raw2bound(r)));

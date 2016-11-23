@@ -24,6 +24,7 @@ struct
   external gt : t -> t -> bool = "stub_pdbm_gt" "noalloc";;
   external leq : t -> t -> bool = "stub_pdbm_leq" "noalloc";;
   external geq : t -> t -> bool = "stub_pdbm_geq" "noalloc";;
+  external free_clock : t -> cindex_t -> unit = "stub_dbm_free_clock";;
 
   external square_inclusion_exp : t -> t -> Udbml.Carray.t -> bool = "stub_pdbm_square_inclusion_exp" "noalloc";;
 
@@ -59,6 +60,7 @@ struct
   external up : t -> int -> unit = "stub_pfed_up" "noalloc";;
   external update_value : t -> cindex_t -> bound_t -> unit = "stub_pfed_update_value" "noalloc";;
   external intersect_dbm : t -> Udbml_unpriced.Dbm.t -> unit = "stub_pfed_intersect_dbm" "noalloc";;
+  external free_clock : t -> cindex_t -> unit = "stub_pfed_free_clock";;
 
   (* TODO should be hidden *)
   module Iterator =

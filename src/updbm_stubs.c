@@ -743,6 +743,23 @@ stub_pfed_update_value(value t, value c, value b)
 }
 
 extern "C" CAMLprim value
+stub_pfed_free_clock(value t, value cl)
+{
+	CAMLparam2(t,cl);
+    get_pfed_ptr(t)->freeClock(Int_val(cl));
+	CAMLreturn(Val_unit);
+}
+
+extern "C" CAMLprim value
+stub_pdbm_free_clock(value t, value cl)
+{
+	CAMLparam2(t,cl);
+    get_pdbm_ptr(t)->freeClock(Int_val(cl));
+	CAMLreturn(Val_unit);
+}
+
+
+extern "C" CAMLprim value
 stub_pfed_iterate(value t, value f)
 {
     CAMLparam2(t,f);
