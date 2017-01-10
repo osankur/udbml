@@ -142,6 +142,14 @@ static struct custom_operations custom_ops_dbm = {
     .serialize      = serialize_dbm,
     .deserialize    = deserialize_dbm
 };
+static struct custom_operations custom_ops_dbm_nodealloc = {
+    .identifier     = (char*)"dbm_wrap_t handling",
+    .finalize       = custom_finalize_default,
+    .compare        = compare_dbm,
+    .hash           = hash_dbm,
+    .serialize      = serialize_dbm,
+    .deserialize    = deserialize_dbm
+};
 static struct custom_operations custom_ops_fed = {
     .identifier     = (char*)"fed_wrap_t handling",
     .finalize       = finalize_fed,
@@ -1389,8 +1397,9 @@ stub_fed_iterator_get(value t)
 	CAMLparam1(t);
 	CAMLlocal1(ret);
 	fed_t::iterator * it = get_fed_it_tp(t);
-	ret = caml_alloc_custom(&custom_ops_dbm, sizeof(dbm_wrap_t), 0, 1);
-    new (Data_custom_val(ret)) dbm_wrap_t(*(it->operator->()));
+	ret = caml_alloc_custom(&custom_ops_dbm_nodealloc, sizeof(dbm_wrap_t), 0, 1);
+	dbm_t * d = it->operator->();
+  memcpy( Data_custom_val(ret), d, sizeof(dbm_wrap_t));
 	CAMLreturn(ret);
 }
 
