@@ -1,6 +1,7 @@
 open Udbml;;
 open Basic_types;;
 
+
 let test_cmp () = 
   let a = Dbm.create 3 in
   Dbm.set_init a;

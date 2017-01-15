@@ -17,26 +17,12 @@ extern "C" {
 
 #include "udbm_stubs.h"
 
-#define get_fed_ptr(x) static_cast<fed_wrap_t*>(Data_custom_val(x))
-#define get_fed_it_tp(x) ((fed_t::iterator*)((fed_it_wrap_t*)Data_custom_val(x))->d)
-#define get_bitvector_tp(x) ((BitString*)((bitvector_wrap_t*)Data_custom_val(x))->b)
 using namespace dbm;
 using namespace base;
-/* This is the main type for Dbms.
-		The encapsulation is needed since
-		we free dbm_t* manually, while
-		the dbm_wrap_t will be freed by the gc.
-*/
-typedef dbm_t dbm_wrap_t;
-typedef fed_t fed_wrap_t;
-typedef struct fed_it_wrap_t {
-	fed_t::iterator * d;
-} fed_it_wrap_t;
-
-typedef struct bitvector_wrap_t {
-	BitString * b;
-} bitvector_wrap_t;
-
+// #define get_fed_ptr(x) static_cast<fed_wrap_t*>(Data_custom_val(x))
+#define get_fed_ptr(x) (((fed_wrap_t*)Data_custom_val(x))->f)
+#define get_fed_it_tp(x) ((fed_t::iterator*)((fed_it_wrap_t*)Data_custom_val(x))->d)
+#define get_bitvector_tp(x) ((BitString*)((bitvector_wrap_t*)Data_custom_val(x))->b)
 
 /*
 	 Warning/Reminder:
@@ -46,10 +32,14 @@ typedef struct bitvector_wrap_t {
 	 CAMLparam, CAMLreturn or any allocation function inside!
  */
 extern "C" void finalize_dbm(value v){
-    get_dbm_ptr(v)->~dbm_t();
+  dbm_t * d = get_dbm_ptr(v);
+  //d->~dbm_t();
+  delete(d);
 }
 extern "C" void finalize_fed(value v){
-    get_fed_ptr(v)->~fed_t();
+  fed_t * f = get_fed_ptr(v);
+  //f->~fed_t();
+  delete(f);
 }
 extern "C" void finalize_fed_it(value v){
 	fed_it_wrap_t * d = (fed_it_wrap_t *)Data_custom_val(v);
@@ -343,16 +333,17 @@ caml_udbml_register_carray(value unit)
     CAMLreturn(Val_unit);
 }
 
-
 // The dbm interface
 extern "C" CAMLprim value
 stub_dbm_create(value size)
 {
 	CAMLparam1(size);
 	CAMLlocal1(dw);
+	  
 	cindex_t dim = Int_val(size);
 	dw = caml_alloc_custom(&custom_ops_dbm, sizeof(dbm_wrap_t), 0, 1);
-    new (Data_custom_val(dw)) dbm_wrap_t(dim);
+	get_dbm_ptr(dw) = new dbm_t(dim);
+	//	(Data_custom_val(dw))->d = new dbm_t(dim);
 	CAMLreturn(dw);
 }
 
@@ -363,7 +354,8 @@ stub_dbm_copy(value dw)
 	CAMLlocal1(new_dw);
 	const dbm_t & d = *get_dbm_ptr(dw);
 	new_dw = caml_alloc_custom(&custom_ops_dbm, sizeof(dbm_wrap_t), 0, 1);
-    new (Data_custom_val(new_dw)) dbm_wrap_t(d);
+	get_dbm_ptr(new_dw) = new dbm_t(d);
+	//	(Data_custom_val(new_dw))->d = new dbm_t(d);
 	CAMLreturn(new_dw);
 }
 
@@ -675,7 +667,9 @@ stub_dbm_copy_from(value ar, value vdim)
 		r[i] = dbm_boundbool2raw(b,ineq==0);
 	}
     dw = caml_alloc_custom(&custom_ops_dbm, sizeof(dbm_wrap_t), 0, 1);
-    new (Data_custom_val(dw)) dbm_wrap_t(dim);
+    //new (Data_custom_val(dw)) dbm_wrap_t(dim);
+	//	(Data_custom_val(dw))->d = new dbm_t(dim);
+	get_dbm_ptr(dw) = new dbm_t(dim);
     get_dbm_ptr(dw)->copyFrom(r, dim);
 	CAMLreturn(dw);
 }
@@ -876,7 +870,8 @@ stub_fed_create(value size)
 	CAMLlocal1(fw);
 	cindex_t dim = Int_val(size);
     fw = caml_alloc_custom(&custom_ops_fed, sizeof(fed_wrap_t), 0, 1);
-    new (Data_custom_val(fw)) fed_wrap_t(dim);
+	((fed_wrap_t*)Data_custom_val(fw))->f = new fed_t(dim);
+    //new (Data_custom_val(fw)) fed_wrap_t(dim);
 	CAMLreturn(fw);
 }
 
@@ -887,7 +882,8 @@ stub_fed_copy(value fw)
 	CAMLlocal1(new_fw);
     new_fw = caml_alloc_custom(&custom_ops_fed, sizeof(fed_wrap_t), 0, 1);
     fed_t * f = get_fed_ptr(fw);
-    new (Data_custom_val(new_fw)) fed_wrap_t(*f);
+    //new (Data_custom_val(new_fw)) fed_wrap_t(*f);
+	((fed_wrap_t*)Data_custom_val(new_fw))->f = new fed_t(*f);
 	CAMLreturn(new_fw);
 }
 
@@ -1385,7 +1381,7 @@ stub_fed_begin_it(value t)
 	fitw = caml_alloc_custom(&custom_ops_fed_it, sizeof(fed_it_wrap_t), 0, 1);
 	fed_t::iterator * it = new fed_t::iterator();
 	*it = d->beginMutable();
-  ((fed_it_wrap_t*)Data_custom_val(fitw))->d = it;
+	((fed_it_wrap_t*)Data_custom_val(fitw))->d = it;
 	CAMLreturn(fitw);
 }
 
@@ -1399,7 +1395,7 @@ stub_fed_iterator_get(value t)
 	fed_t::iterator * it = get_fed_it_tp(t);
 	ret = caml_alloc_custom(&custom_ops_dbm_nodealloc, sizeof(dbm_wrap_t), 0, 1);
 	dbm_t * d = it->operator->();
-  memcpy( Data_custom_val(ret), d, sizeof(dbm_wrap_t));
+	get_dbm_ptr(ret) = d;
 	CAMLreturn(ret);
 }
 

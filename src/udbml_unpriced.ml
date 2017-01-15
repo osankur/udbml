@@ -90,7 +90,7 @@ struct
     if (is_empty t) then "false"
     else
       (
-        let buf = Buffer.create 256 in
+        let buf = Buffer.create 1024 in
         let ar = copy_to t in
         let dim = dimension t in
         for i = 0 to (dim - 1) do
