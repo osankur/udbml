@@ -734,6 +734,11 @@ stub_pfed_up(value v, value rate)
     get_pfed_ptr(v)->up(Int_val(rate));
     return Val_unit;
 }
+extern "C" CAMLprim value
+stub_pfed_dimension(value pf)
+{
+    return Val_int(get_pfed_ptr(pf)->getDimension());
+}
 
 extern "C" CAMLprim value
 stub_pfed_update_value(value t, value c, value b)
