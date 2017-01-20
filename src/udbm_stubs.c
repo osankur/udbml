@@ -1399,7 +1399,8 @@ stub_fed_iterator_get(value t)
 	fed_t::iterator * it = get_fed_it_tp(t);
 	ret = caml_alloc_custom(&custom_ops_dbm_nodealloc, sizeof(dbm_wrap_t), 0, 1);
 	dbm_t * d = it->operator->();
-  memcpy( Data_custom_val(ret), d, sizeof(dbm_wrap_t));
+  // memcpy( Data_custom_val(ret), d, sizeof(dbm_wrap_t));
+    new (Data_custom_val(ret)) dbm_wrap_t(*d);
 	CAMLreturn(ret);
 }
 
