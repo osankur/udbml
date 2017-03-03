@@ -33,6 +33,7 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include "config.h"
 #include "base/bitstring.h"
 #include "dbm/mingraph.h"
 #include "mingraph_coding.h"
@@ -91,7 +92,7 @@ typedef relation_t (*relation_f)(const raw_t*, cindex_t, const int32_t*, raw_t*,
 /* only relations with min. red. representations,
  * not exact relations.
  */
-static const relation_f relationWithMinDBM[8] = 
+static const relation_f relationWithMinDBM[8] =
 {
     mingraph_relationWithCopy32,
     mingraph_relationWithCopy16,
@@ -230,7 +231,7 @@ relation_t dbm_approxRelationWithMinDBM(const raw_t *dbm, cindex_t dim,
  * @param mingraph: stored DBM format
  * @param unpackBuffer: if NULL then enough with approximate
  * answer, if != NULL, exact answer required.
- * @return 
+ * @return
  * - exact relation of dbm (<=,>,!=) mingraph
  *   if unpackBuffer != NULL
  * - approximate relation of dbm (<=,!=) mingraph
@@ -279,7 +280,7 @@ relation_t mingraph_relationWithCopy32(const raw_t *dbm, cindex_t dim,
         }
         dbm++; /* diagonal */
         assert(*dbm == dbm_LE_ZERO); /* diagonal */
-    } while(--nbLines);    
+    } while(--nbLines);
 
     assert(base_SUPERSET == 1 && base_SUBSET == 2);
     return (relation_t)((subset << 1) | superset);
@@ -293,7 +294,7 @@ relation_t mingraph_relationWithCopy32(const raw_t *dbm, cindex_t dim,
      * algorithm. Basically the same code is repeated three times:
      *
      * 1. Assuming that the two DBMs are equal. If this turns out
-     *    not to be the case, we jump to the same point in copy 2 
+     *    not to be the case, we jump to the same point in copy 2
      *    or 3.
      * 2. Assuming that the first DBM is a subset of the second.
      * 3. Assuming that the first DBM is a superset of the second.
@@ -329,7 +330,7 @@ relation_t mingraph_relationWithCopy32(const raw_t *dbm, cindex_t dim,
             dbm++; /* diagonal */
             assert(*dbm == dbm_LE_ZERO); /* diagonal */
         } while (--nbLines);
-        
+
         return base_EQUAL;
     }
 
@@ -345,7 +346,7 @@ relation_t mingraph_relationWithCopy32(const raw_t *dbm, cindex_t dim,
             {
                 return base_DIFFERENT;
             }
-        TrySubSet32: 
+        TrySubSet32:
             ;
         } while (--nbCols);
         dbm++; /* diagonal */
@@ -383,7 +384,7 @@ relation_t mingraph_relationWithCopy32(const raw_t *dbm, cindex_t dim,
  * @param mingraph: stored DBM format
  * @param unpackBuffer: if NULL then enough with approximate
  * answer, if != NULL, exact answer required.
- * @return 
+ * @return
  * - exact relation of dbm (<=,>,!=) mingraph
  *   if unpackBuffer != NULL
  * - approximate relation of dbm (<=,!=) mingraph
@@ -433,7 +434,7 @@ relation_t mingraph_relationWithCopy16(const raw_t *dbm, cindex_t dim,
         }
         dbm++; /* diagonal */
         assert(*dbm == dbm_LE_ZERO); /* diagonal */
-    } while(--nbLines);    
+    } while(--nbLines);
 
     assert(base_SUPERSET == 1 && base_SUBSET == 2);
     return (relation_t)((subset << 1) | superset);
@@ -448,7 +449,7 @@ relation_t mingraph_relationWithCopy16(const raw_t *dbm, cindex_t dim,
      * algorithm. Basically the same code is repeated three times:
      *
      * 1. Assuming that the two DBMs are equal. If this turns out
-     *    not to be the case, we jump to the same point in copy 2 
+     *    not to be the case, we jump to the same point in copy 2
      *    or 3.
      * 2. Assuming that the first DBM is a subset of the second.
      * 3. Assuming that the first DBM is a superset of the second.
@@ -460,7 +461,7 @@ relation_t mingraph_relationWithCopy16(const raw_t *dbm, cindex_t dim,
     if (unpackBuffer != NULL)
     {
         *isExact = TRUE;
-        
+
         /* check dbm == mingraph
          */
         do {
@@ -477,7 +478,7 @@ relation_t mingraph_relationWithCopy16(const raw_t *dbm, cindex_t dim,
                     else
                     {
                         goto TrySubSet16;
-                    }                    
+                    }
                 }
                 saved++;
             } while(--nbCols);
@@ -509,7 +510,7 @@ relation_t mingraph_relationWithCopy16(const raw_t *dbm, cindex_t dim,
     return base_SUBSET;
 
     /* check dbm < mingraph
-     */        
+     */
     do
     {
         nbCols = dim;
@@ -551,12 +552,12 @@ relation_t mingraph_relationWithMinBitMatrix32(const raw_t *dbm, cindex_t dim,
     uint32_t *bitMatrix = (uint32_t*) &constraints[nbConstraints];
     BOOL hasStrictLess = FALSE;
     const raw_t *dbmBase;
-    
+
     assert(dim == mingraph_readDimFromPtr(mingraph));
     assert(dbm && dim > 2);
     assert(base_countBitsN(bitMatrix, bits2intsize(dim*dim))
            == nbConstraints);
-    
+
     for(dbmBase = dbm;; dbmBase += 32, dbm = dbmBase)
     {
         uint32_t b;
@@ -606,7 +607,7 @@ relation_t mingraph_relationWithMinBitMatrix16(const raw_t *dbm, cindex_t dim,
     assert(dbm && dim > 2);
     assert(base_countBitsN(bitMatrix, bits2intsize(dim*dim))
            == nbConstraints);
-    
+
     /* similar to save */
     for(dbmBase = dbm;; dbmBase += 32, dbm = dbmBase)
     {
@@ -649,10 +650,10 @@ relation_t mingraph_relationWithMinCouplesij32(const raw_t *dbm, cindex_t dim,
 {
     uint32_t info = mingraph_getInfo(mingraph);
     size_t nbConstraints = mingraph_getNbConstraints(mingraph);
-    
+
     assert(dim == mingraph_readDim(info));
     assert(dbm && (dim > 2 || nbConstraints == 0));
-    
+
     if (nbConstraints) /* could be = 0 */
     {
         /* reminder: size of indices of couples i,j = 4, 8, or 16 bits
@@ -663,15 +664,15 @@ relation_t mingraph_relationWithMinCouplesij32(const raw_t *dbm, cindex_t dim,
         uint32_t bitMask = (1 << bitSize) - 1; /* standard */
         const raw_t *constraints = mingraph_getCodedData(mingraph);
         uint32_t *couplesij = (uint32_t*) &constraints[nbConstraints];
-        
+
         uint32_t consumed = 0; /* count consumed bits */
         uint32_t val_ij = *couplesij;
         BOOL hasStrictLess = FALSE;
-        
+
         for(;;)
         {
             cindex_t i, j;
-            
+
             /* integer decompression
              */
             i = val_ij & bitMask;
@@ -679,7 +680,7 @@ relation_t mingraph_relationWithMinCouplesij32(const raw_t *dbm, cindex_t dim,
             j = val_ij & bitMask;
             val_ij >>= bitSize;
             consumed += bitSize + bitSize;
-            
+
             /* test constraint
              */
             if (dbm[i*dim+j] > *constraints)
@@ -694,7 +695,7 @@ relation_t mingraph_relationWithMinCouplesij32(const raw_t *dbm, cindex_t dim,
                 return base_SUBSET;
             }
             constraints++;
-            
+
             /* do not read new couples
              * if there is no constraint
              * left
@@ -740,16 +741,16 @@ relation_t mingraph_relationWithMinCouplesij16(const raw_t *dbm, cindex_t dim,
      */
     uint32_t bitSize = 1 << (mingraph_typeOfIJ(info) + 2);
     uint32_t bitMask = (1 << bitSize) - 1; /* standard */
-    
+
     size_t nbConstraints     = mingraph_getNbConstraints(mingraph);
     const int16_t *constraints = (int16_t*) mingraph_getCodedData(mingraph);
     const uint32_t *couplesij =
         mingraph_jumpConstInt16(constraints, nbConstraints);
-    
+
     uint32_t consumed = 0; /* count consumed bits */
     uint32_t val_ij = *couplesij;
     BOOL hasStrictLess = FALSE;
-    
+
     assert(dim == mingraph_readDim(info));
     assert(nbConstraints); /* can't be = 0 */
     assert(dbm && dim > 2);
@@ -757,7 +758,7 @@ relation_t mingraph_relationWithMinCouplesij16(const raw_t *dbm, cindex_t dim,
     for(;;)
     {
         cindex_t i, j;
-        
+
         /* integer decompression
          */
         i = val_ij & bitMask;
@@ -765,7 +766,7 @@ relation_t mingraph_relationWithMinCouplesij16(const raw_t *dbm, cindex_t dim,
         j = val_ij & bitMask;
         val_ij >>= bitSize;
         consumed += bitSize + bitSize;
-        
+
         /* test constraint
          */
         raw_t c = mingraph_finite16to32(*constraints);
@@ -781,7 +782,7 @@ relation_t mingraph_relationWithMinCouplesij16(const raw_t *dbm, cindex_t dim,
             return base_SUBSET;
         }
         constraints++;
-        
+
         /* do not read new couples
          * if there is no constraint
          * left

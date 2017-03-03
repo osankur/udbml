@@ -33,6 +33,7 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include "config.h"
 #include "base/bitstring.h"
 #include "dbm/mingraph.h"
 #include "mingraph_coding.h"
@@ -135,7 +136,7 @@ BOOL dbm_mingraphHasZero(const int32_t* minDBM)
     {
         return FALSE;
     }
-    
+
     /* dim > 1
      */
     return hasZero[mingraph_getTypeIndexFromPtr(minDBM)](minDBM);
@@ -178,7 +179,7 @@ cindex_t dbm_readFromMinDBM(raw_t *dbm, const int32_t *minDBM)
         *dbm = dbm_LE_ZERO;
         return (cindex_t) *minDBM;
     }
-    
+
     /* dim > 1
      */
     return
@@ -238,7 +239,7 @@ size_t dbm_getBitMatrixFromMinDBM(uint32_t *bitMatrix, const int32_t* minDBM,
         }
     }
 #endif
-    
+
     /* dim > 1
      */
     return
@@ -411,7 +412,7 @@ cindex_t mingraph_readFromMinBitMatrix32(raw_t *dbm, const int32_t *mingraph)
     uint32_t *bitMatrix = (uint32_t*) &constraints[nbConstraints];
     raw_t *dst = dbm;
     cindex_t i = 0, j = 0;
-    
+
 #ifdef EXPERIMENTAL
     uint32_t indices[dim*(dim-1)];
     size_t ni = 0;
@@ -582,7 +583,7 @@ cindex_t mingraph_readFromMinCouplesij32(raw_t *dbm, const int32_t *mingraph)
 
         uint32_t consumed = 0; /* count consumed bits */
         uint32_t val_ij = *couplesij;
-        
+
 #ifdef EXPERIMENTAL
         uint32_t indices[dim*(dim-1)];
         size_t ni = 0;
@@ -807,7 +808,7 @@ size_t mingraph_addMissingConstraints(uint32_t *matrix, const int32_t *mingraph,
     cindex_t i, j, k;
     assert(sizeof(cindex_t) == 2 || sizeof(cindex_t) == 4);
     base_resetSmall(first, ((dim+dim)*sizeof(cindex_t))/sizeof(int));
-    
+
     /* zero cycles */
     i = 0;
     do {
@@ -833,7 +834,7 @@ size_t mingraph_addMissingConstraints(uint32_t *matrix, const int32_t *mingraph,
         }
         dbm_idim += dim;
     } while (++i < dim);
-    
+
     /* reduction */
     assert(first[0] == 0 && first < end);
     for (q = first+1; q < end; q++) if (dbm[*q] == dbm_LE_ZERO && !base_readOneBit(matrix, *q))

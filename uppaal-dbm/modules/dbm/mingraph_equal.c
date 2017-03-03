@@ -33,6 +33,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include "config.h"
 #include "base/bitstring.h"
 #include "dbm/mingraph.h"
 #include "mingraph_coding.h"
@@ -192,7 +193,7 @@ BOOL dbm_isAnalyzedDBMEqualToMinDBM(const raw_t *dbm, cindex_t dim,
         (dim == 1 && *dbm == dbm_LE_ZERO) :              /* trivial case or */
         (dim == mingraph_readDimFromPtr(minDBM) &&       /* same dimension */
          isEqualTo[mingraph_getTypeIndexFromPtr(minDBM)] /* and same DBM */
-         (dbm, dim, bitMatrix, nbConstraints, minDBM));   
+         (dbm, dim, bitMatrix, nbConstraints, minDBM));
 }
 
 
@@ -293,12 +294,12 @@ BOOL mingraph_isEqualToCopy16(const raw_t *dbm, cindex_t dim,
     const int16_t *saved = (int16_t*) &mingraph[1];
     size_t nbLines = dim - 1;
     int32_t difference = 0;
-    
+
     /* only DBMs of equal dimensions are comparable
      */
     assert(dim == mingraph_readDimFromPtr(mingraph));
     assert(dim > 1);
-        
+
     do {
         size_t nbCols = dim;
         assert(*dbm == dbm_LE_ZERO); /* diagonal */
@@ -310,7 +311,7 @@ BOOL mingraph_isEqualToCopy16(const raw_t *dbm, cindex_t dim,
         } while(--nbCols);
     } while(--nbLines);
     assert(*dbm == dbm_LE_ZERO); /* diagonal */
-    
+
     return (BOOL)(difference == 0);
 }
 
@@ -362,7 +363,7 @@ BOOL mingraph_isAnalyzedDBMEqualToMinBitMatrix32(const raw_t *dbm, cindex_t dim,
            == nbConstraints);
 
     *srcNbConstraints = dbm_cleanBitMatrix(dbm, dim, srcBitMatrix, *srcNbConstraints);
-    
+
     if (nbConstraints != *srcNbConstraints ||
         !base_areEqual(bitMatrix, srcBitMatrix, bits2intsize(dim*dim)))
     {
@@ -503,7 +504,7 @@ BOOL mingraph_isAnalyzedDBMEqualToMinCouplesij32(const raw_t *dbm, cindex_t dim,
 {
     uint32_t info = mingraph_getInfo(mingraph);
     size_t nbConstraints = mingraph_getNbConstraints(mingraph);
-        
+
     *srcNbConstraints = dbm_cleanBitMatrix(dbm, dim, srcBitMatrix, *srcNbConstraints);
 
     if (*srcNbConstraints != nbConstraints)
@@ -513,7 +514,7 @@ BOOL mingraph_isAnalyzedDBMEqualToMinCouplesij32(const raw_t *dbm, cindex_t dim,
 
     assert(dim == mingraph_readDim(info));
     assert(dbm && (dim > 2 || nbConstraints == 0));
-    
+
     if (nbConstraints) /* could be = 0 */
     {
         /* reminder: size of indices of couples i,j = 4, 8, or 16 bits
@@ -524,7 +525,7 @@ BOOL mingraph_isAnalyzedDBMEqualToMinCouplesij32(const raw_t *dbm, cindex_t dim,
         uint32_t bitMask = (1 << bitSize) - 1; /* standard */
         const raw_t *constraints = mingraph_getCodedData(mingraph);
         uint32_t *couplesij = (uint32_t*) &constraints[nbConstraints];
-        
+
         uint32_t consumed = 0; /* count consumed bits */
         uint32_t val_ij = *couplesij;
         int32_t difference = 0;
@@ -540,7 +541,7 @@ BOOL mingraph_isAnalyzedDBMEqualToMinCouplesij32(const raw_t *dbm, cindex_t dim,
             j = val_ij & bitMask;
             val_ij >>= bitSize;
             consumed += bitSize + bitSize;
-            
+
             /* Accumulate differences: constraints and bit matrix
              */
             difference |= (dbm[i*dim+j] ^ *constraints)
@@ -623,7 +624,7 @@ BOOL mingraph_isAnalyzedDBMEqualToMinCouplesij16(const raw_t *dbm, cindex_t dim,
         const int16_t *constraints = (int16_t*) mingraph_getCodedData(mingraph);
         const uint32_t *couplesij =
             mingraph_jumpConstInt16(constraints, nbConstraints);
-    
+
         uint32_t consumed = 0; /* count consumed bits */
         uint32_t val_ij = *couplesij;
         int32_t difference = 0;
@@ -631,11 +632,11 @@ BOOL mingraph_isAnalyzedDBMEqualToMinCouplesij16(const raw_t *dbm, cindex_t dim,
         assert(dim == mingraph_readDim(info));
         assert(nbConstraints); /* can't be = 0 */
         assert(dbm && dim > 2);
-        
+
         for(;;)
         {
             cindex_t i, j;
-            
+
             /* integer decompression
              */
             i = val_ij & bitMask;
@@ -643,18 +644,18 @@ BOOL mingraph_isAnalyzedDBMEqualToMinCouplesij16(const raw_t *dbm, cindex_t dim,
             j = val_ij & bitMask;
             val_ij >>= bitSize;
             consumed += bitSize + bitSize;
-            
+
             /* Accumulate differences: constraints and bit matrix
              */
             difference |= (dbm[i*dim+j] ^ mingraph_finite16to32(*constraints))
                 | (base_getOneBit(srcBitMatrix, i*dim+j) ^ 1);
-            
+
             if (!--nbConstraints)
             {
                 return (BOOL)(difference == 0);
             }
             constraints++;
-            
+
             /* do not read new couples
              * if there is no constraint
              * left

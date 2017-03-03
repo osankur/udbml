@@ -1,6 +1,6 @@
 # Filename: configure.ac
 
-# Init 
+# Init
 
 AC_INIT([UPPAAL], [4.1.4 (4761)], [bug-uppaal@list.it.uu.se])
 AC_CONFIG_AUX_DIR(../scripts/)
@@ -99,8 +99,8 @@ AC_PROG_YACC
 AM_PROG_AR
 AC_PROG_RANLIB
 AC_PROG_INSTALL
-AC_PATH_PROG(XML_CONFIG, 
-             [xml2-config], 
+AC_PATH_PROG(XML_CONFIG,
+             [xml2-config],
 	     [AC_MSG_ERROR([cannot find xml2-config])])
 AC_PATH_PROG(GPERF, [gperf], [AC_MSG_ERROR([cannot find gperf])])
 AC_PATH_PROG(MAKEDEP, [makedepend], [AC_MSG_ERROR([cannot find makedepend])])
@@ -116,7 +116,11 @@ AC_SUBST(XMLSTATIC,$XMLSTATIC)
 # Checks for header files.
 
 AC_HEADER_STDC
-AC_CHECK_HEADERS([stdint.h inttypes.h unistd.h errno.h memory.h string.h strings.h sys/wait.h])
+AC_CHECK_HEADERS([stdint.h inttypes.h errno.h], [],
+                 AC_MSG_ERROR([cannot find standard header. Does your build
+                               environment comply to the C11 standard?]))
+AC_CHECK_HEADERS([unistd.h memory.h strings.h])
+AC_HEADER_SYS_WAIT
 AC_CHECK_HEADERS([sstream strstream])
 
 # Other customized checks, see acinclude.m4
@@ -127,10 +131,10 @@ UA_CXX_STREAMBUF
 # Define INTEL_ARCH on Intel architectures
 
 case $host_cpu in
-i?86|x86_64) 
+i?86|x86_64)
 	AC_DEFINE(INTEL_ARCH, 1, [Define to 1 when on Intel architecture])
 	;;
-*) 
+*)
 	AC_DEFINE(INTEL_ARCH, 0)
 	;;
 esac
@@ -139,12 +143,12 @@ esac
 
 case $CXX in
 g++*)
-	AC_DEFINE_UNQUOTED(COMPILER_STRING, 
-			   "Compiled with g++-`$CXX -dumpversion | tr -d '\r'` $CXXFLAGS", 
+	AC_DEFINE_UNQUOTED(COMPILER_STRING,
+			   "Compiled with g++-`$CXX -dumpversion | tr -d '\r'` $CXXFLAGS",
 		           [A compiler identification string])
 	;;
 icc*)
-	AC_DEFINE_UNQUOTED(COMPILER_STRING, 
+	AC_DEFINE_UNQUOTED(COMPILER_STRING,
 			   "Compiled with icc-`$CXX --version` $CXXFLAGS")
 	;;
 *)
@@ -170,6 +174,4 @@ AC_CHECK_FUNCS(index)
 # Output the crap
 
 AC_OUTPUT
-
-
 

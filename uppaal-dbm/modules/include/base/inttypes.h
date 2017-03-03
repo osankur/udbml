@@ -39,24 +39,8 @@
 #ifndef INCLUDE_BASE_INTTYPES_H
 #define INCLUDE_BASE_INTTYPES_H
 
-/** Note on availability of headers:
- * - Linux has inttypes.h and stdint.h
- * - Solaris has inttypes.h only
- * - Mingwing has stdint.h
- * - Microsoft has none of them
- *   temporary solution: define here.
- *
- * config.h knows about availability:
- */
-#include "config.h"
-
-#ifdef HAVE_INTTYPES_H
+// inttypes.h includes stdint.h
 #include <inttypes.h>
-#elif defined(HAVE_STDINT_H)
-#include <stdint.h>
-#else
-#error "No inttypes.h or stdint.h"
-#endif
 
 /** Size computation in "int" units to avoid any alignment problem.
  * intsizeof    : as sizeof but result in "int" units

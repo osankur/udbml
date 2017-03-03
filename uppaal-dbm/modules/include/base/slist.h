@@ -36,8 +36,6 @@
 #ifndef INCLUDE_BASE_SLIST_H
 #define INCLUDE_BASE_SLIST_H
 
-#include "config.h"
-
 #include <list>
 #define slist list
 
