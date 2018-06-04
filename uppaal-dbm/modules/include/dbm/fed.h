@@ -959,10 +959,10 @@ namespace dbm
         /// (re-)initialize the federation with no constraint.
         /// @post size() == 1 if dim > 1, 0 otherwise.
         fed_t& setInit();
-        
+
         /// Convex union of its DBMs.
         fed_t& convexHull();
-        
+
         /** Similar to dbm_t::makeUnbounded but only w.r.t. the future
          * of this DBM, i.e., take max(c[i],max all lower bounds[i])
          * as lower bounds (and keep strictness).
@@ -982,7 +982,7 @@ namespace dbm
         /// (Set) union operator (|). Inclusion is checked and the
         /// operation has the effect of reduce() on the argument.
         /// @pre same dimension.
-        
+
         fed_t& operator |= (const fed_t&);
         fed_t& operator |= (const dbm_t&);
         fed_t& operator |= (const raw_t*);

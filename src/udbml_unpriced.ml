@@ -1,21 +1,21 @@
 (**
    Notes
-   
+
    1) All 32 bits integers are represented by int in this module.
    We should use Int32 in principle although we don't want to slow things down.
    Similarly all unsigned integers are int in this module. 
    This is not a problem for the cindex_t type and neither should it be for hash values.
 
    2) When loading from or copying to a raw_t array, dbm[i,j] = array[i*dim + j]
-   
+
    3) TODO LIST
-   - use "noalloc" when possible
+   - use @@noalloc when possible
    - ClockAccessor
    - Pretty printing
    - Print to a channel given in argument, not only to stdout
 *)
 
-module Bit_vector = 
+module Bit_vector =
 struct
   type t
   external create : int -> t = "stub_bitvector_create";;
@@ -26,13 +26,13 @@ struct
   external count : t -> int = "stub_bitvector_count";;
 end
 
-module ClockAccessor = 
+module ClockAccessor =
 struct
   (* TODO Fill in *)
 end
 
 
-module Dbm = 
+module Dbm =
 struct
   type t
   include Udbml.Basic_types
@@ -40,14 +40,14 @@ struct
   external _register_dbm : unit -> unit = "caml_udbml_register_dbm";;
   let _ = _register_dbm ()
 
-  external _max_dim_power : unit -> int = "stub_dbm_max_dim_power" "noalloc";;
-  external _max_dim : unit -> int = "stub_dbm_max_dim" "noalloc";;
-  
+  external _max_dim_power : unit -> int = "stub_dbm_max_dim_power" [@@noalloc];;
+  external _max_dim : unit -> int = "stub_dbm_max_dim" [@@noalloc];;
+
   let max_dim_power = _max_dim_power()
   let max_dim = _max_dim()
 
   external create : int -> t = "stub_dbm_create";;
-  external dimension : t -> int = "stub_dbm_dimension" "noalloc";;
+  external dimension : t -> int = "stub_dbm_dimension" [@@noalloc];;
   external copy : t -> t = "stub_dbm_copy";;
   external is_empty : t -> bool = "stub_dbm_is_empty";;
   external set_empty : t -> unit = "stub_dbm_set_empty";;
@@ -56,24 +56,24 @@ struct
   external intern : t -> unit = "stub_dbm_intern";;
 
   external at : t -> int -> int -> raw_t = "stub_dbm_at";;
-  external at_bound : t -> int -> int -> int = "stub_dbm_at_bound" "noalloc";;
-  external equal : t -> t -> bool = "stub_dbm_equal" "noalloc";;
-  external notequal : t -> t -> bool = "stub_dbm_notequal" "noalloc";;
-  external lt : t -> t -> bool = "stub_dbm_lt" "noalloc";;
-  external gt : t -> t -> bool = "stub_dbm_gt" "noalloc";;
-  external leq : t -> t -> bool = "stub_dbm_leq" "noalloc";;
-  external geq : t -> t -> bool = "stub_dbm_geq" "noalloc";;
+  external at_bound : t -> int -> int -> int = "stub_dbm_at_bound" [@@noalloc];;
+  external equal : t -> t -> bool = "stub_dbm_equal" [@@noalloc];;
+  external notequal : t -> t -> bool = "stub_dbm_notequal" [@@noalloc];;
+  external lt : t -> t -> bool = "stub_dbm_lt" [@@noalloc];;
+  external gt : t -> t -> bool = "stub_dbm_gt" [@@noalloc];;
+  external leq : t -> t -> bool = "stub_dbm_leq" [@@noalloc];;
+  external geq : t -> t -> bool = "stub_dbm_geq" [@@noalloc];;
 
   external closure_leq : Udbml.Carray.t -> Udbml.Carray.t -> t -> t -> bool =
-    "stub_dbm_closure_leq" "noalloc";;
+    "stub_dbm_closure_leq" [@@noalloc];;
 
-  external constrain : t -> clock_constraint_t -> unit = "stub_dbm_constrain" "noalloc";;
+  external constrain : t -> clock_constraint_t -> unit = "stub_dbm_constrain" [@@noalloc];;
   external copy_to : t -> raw_t array = "stub_dbm_copy_to";;
   external set_init : t -> unit = "stub_dbm_set_init";;
   external set_zero : t -> unit = "stub_dbm_set_zero";;
   external is_zero : t -> bool = "stub_dbm_is_zero";;
   external is_init : t -> bool = "stub_dbm_is_init";;
-  external intersect : t -> t -> unit = "stub_dbm_intersect" "noalloc";;
+  external intersect : t -> t -> unit = "stub_dbm_intersect" [@@noalloc];;
   external intersects : t -> t -> bool = "stub_dbm_intersects";;
   external up : t -> unit = "stub_dbm_up";;
   external down : t -> unit = "stub_dbm_down";;
@@ -85,7 +85,7 @@ struct
   external free_all_down : t -> unit = "stub_dbm_free_all_down";;
 
   external is_unbounded : t -> bool = "stub_dbm_is_unbounded";;
-  
+
   let to_string t =
     if (is_empty t) then "false"
     else
@@ -102,7 +102,7 @@ struct
         Buffer.contents buf
       )
 
-  let print t = 
+  let print t =
     let ar = copy_to t in
     let dim = dimension t in
     for i = 0 to (dim - 1) do
@@ -111,7 +111,7 @@ struct
       done;
       Printf.printf "\n"
     done
-    
+
   external copy_from : raw_t array -> int -> t = "stub_dbm_copy_from";;
   external convex_add : t -> t -> unit = "stub_dbm_convex_add";;
 
@@ -123,12 +123,11 @@ struct
   external satisfies : t -> clock_constraint_t -> bool = "stub_dbm_satisfies";;
   external is_subtraction_empty : t -> t -> bool = "stub_dbm_is_subtraction_empty";;
 
-  
   external extrapolate_max_bounds : t -> Udbml.Carray.t -> unit = "stub_dbm_extrapolate_max_bounds";;
   external diagonal_extrapolate_max_bounds : t -> Udbml.Carray.t -> unit = "stub_dbm_diagonal_extrapolate_max_bounds";;
-  external extrapolate_lu_bounds : t -> Udbml.Carray.t -> Udbml.Carray.t -> unit = "stub_dbm_extrapolate_lu_bounds" "noalloc";;
+  external extrapolate_lu_bounds : t -> Udbml.Carray.t -> Udbml.Carray.t -> unit = "stub_dbm_extrapolate_lu_bounds" [@@noalloc];;
   external diagonal_extrapolate_lu_bounds : t -> Udbml.Carray.t -> Udbml.Carray.t -> unit = "stub_dbm_diagonal_extrapolate_lu_bounds";;
-  
+
   external resize : t -> Bit_vector.t ->  Bit_vector.t -> int array = "stub_dbm_resize";;
 
   external _internal_addr : t -> int = "stub_dbm__internal_addr";;
@@ -138,12 +137,12 @@ module Fed =
 struct
   type t
   include Udbml.Basic_types
-      
+
   external create : int -> t = "stub_fed_create";;
   external copy : t -> t = "stub_fed_copy";;
   external dimension : t -> int = "stub_fed_dimension";;
   external intern : t -> unit = "stub_fed_intern";;
-  external is_empty : t -> bool = "stub_fed_is_empty" "noalloc";;
+  external is_empty : t -> bool = "stub_fed_is_empty" [@@noalloc];;
   external set_empty : t -> unit = "stub_fed_set_empty";;
   external has_zero : t -> bool = "stub_fed_has_zero";;
   external hash : t -> int = "stub_fed_hash";;
@@ -186,15 +185,15 @@ struct
 
   external convex_union : t -> t -> unit = "stub_fed_convex_union";;
   external convex_union_dbm : t -> Dbm.t -> unit = "stub_fed_convex_union_dbm";;
-  external intersect : t -> t -> unit = "stub_fed_intersect" "noalloc";;
-  external intersect_dbm : t -> Dbm.t -> unit = "stub_fed_intersect_dbm" "noalloc";;
+  external intersect : t -> t -> unit = "stub_fed_intersect" [@@noalloc];;
+  external intersect_dbm : t -> Dbm.t -> unit = "stub_fed_intersect_dbm" [@@noalloc];;
   external subtract : t -> t -> unit = "stub_fed_subtract";;
   external subtract_dbm : t -> Dbm.t -> unit = "stub_fed_subtract_dbm";;
-  external up : t -> unit = "stub_fed_up" "noalloc";;
-  external down : t -> unit = "stub_fed_down" "noalloc";;
+  external up : t -> unit = "stub_fed_up" [@@noalloc];;
+  external down : t -> unit = "stub_fed_down" [@@noalloc];;
   external free_clock : t -> cindex_t -> unit = "stub_fed_free_clock";;
   external constrain : t -> clock_constraint_t -> unit = "stub_fed_constrain";;
-  external update_value : t -> cindex_t -> bound_t -> unit = "stub_fed_update_value" "noalloc";;
+  external update_value : t -> cindex_t -> bound_t -> unit = "stub_fed_update_value" [@@noalloc];;
   external reduce : t -> unit = "stub_fed_reduce";;
   external expensive_reduce : t -> unit = "stub_fed_expensive_reduce";;
   external merge_reduce : t -> int -> int -> unit = "stub_fed_merge_reduce";;

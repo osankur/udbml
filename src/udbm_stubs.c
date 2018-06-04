@@ -352,7 +352,7 @@ stub_dbm_create(value size)
 	CAMLlocal1(dw);
 	cindex_t dim = Int_val(size);
 	dw = caml_alloc_custom(&custom_ops_dbm, sizeof(dbm_wrap_t), 0, 1);
-    new (Data_custom_val(dw)) dbm_wrap_t(dim);
+        new (Data_custom_val(dw)) dbm_wrap_t(dim);
 	CAMLreturn(dw);
 }
 
@@ -464,9 +464,14 @@ extern "C" CAMLprim value
 stub_dbm_at(value t, value i, value j){
 	CAMLparam3(t,i,j);
 	CAMLlocal1(ret);
+        // printf("Accessing value(%d,%d) at: %x\n",Int_val(i),Int_val(j), get_dbm_ptr(t)); fflush(stdout);
 	const dbm_t & d = *get_dbm_ptr(t);
+        // printf("Dim: %d\n",d.getDimension()); fflush(stdout);
+        // const raw_t * rar = d[0];
+        // printf("got it: %x\n", rar); fflush(stdout);
+        // printf("Dim: %d\n",rar[0]); fflush(stdout);
 	raw_t r = d(Int_val(i),Int_val(j));
-	// printf("Getting value: %d\n", dbm_raw2bound(r));
+	// printf("Getting value: %d\n", dbm_raw2bound(r)); fflush(stdout);
 	// Make pair
 	ret = caml_alloc(2,0);
 	Store_field(ret, 0, Val_int(dbm_raw2bound(r)));
@@ -475,8 +480,8 @@ stub_dbm_at(value t, value i, value j){
 }
 extern "C" CAMLprim value
 stub_dbm_at_bound(value t, value i, value j){
-	const dbm_t & d = *get_dbm_ptr(t);
-	return Val_int(dbm_raw2bound(d(Int_val(i),Int_val(j))));
+  const dbm_t & d = *get_dbm_ptr(t);
+  return Val_int(dbm_raw2bound(d(Int_val(i),Int_val(j))));
 }
 
 extern "C" CAMLprim value
@@ -663,21 +668,22 @@ stub_dbm_is_unbounded(value t)
 extern "C" CAMLprim value
 stub_dbm_copy_from(value ar, value vdim)
 {
-	CAMLparam1(ar);
-    CAMLlocal1(dw);
-	int dim = Int_val(vdim);
-	dbm_t d = dbm_t(dim);
-	raw_t * r = new raw_t[dim*dim];
-	int b, ineq;
-	for(int i = 0; i < dim*dim; i++){
-		b = Int_val(Field(Field(ar, i), 0));
-		ineq = Int_val(Field(Field(ar,i),1));
-		r[i] = dbm_boundbool2raw(b,ineq==0);
-	}
-    dw = caml_alloc_custom(&custom_ops_dbm, sizeof(dbm_wrap_t), 0, 1);
-    new (Data_custom_val(dw)) dbm_wrap_t(dim);
-    get_dbm_ptr(dw)->copyFrom(r, dim);
-	CAMLreturn(dw);
+  CAMLparam1(ar);
+  CAMLlocal1(dw);
+  int dim = Int_val(vdim);
+  dbm_t d = dbm_t(dim);
+  raw_t * r = new raw_t[dim*dim];
+  int b, ineq;
+  for(int i = 0; i < dim*dim; i++){
+    b = Int_val(Field(Field(ar, i), 0));
+    ineq = Int_val(Field(Field(ar,i),1));
+    r[i] = dbm_boundbool2raw(b,ineq==0);
+  }
+  dbm_close(r, dim);
+  dw = caml_alloc_custom(&custom_ops_dbm, sizeof(dbm_wrap_t), 0, 1);
+  new (Data_custom_val(dw)) dbm_wrap_t(dim);
+  get_dbm_ptr(dw)->copyFrom(r, dim);
+  CAMLreturn(dw);
 }
 
 extern "C" CAMLprim value
