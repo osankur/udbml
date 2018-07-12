@@ -22,6 +22,7 @@ extern "C" {
 #define get_bitvector_tp(x) ((BitString*)((bitvector_wrap_t*)Data_custom_val(x))->b)
 using namespace dbm;
 using namespace base;
+using namespace std;
 /* This is the main type for Dbms.
 		The encapsulation is needed since
 		we free dbm_t* manually, while

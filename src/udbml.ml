@@ -18,7 +18,7 @@ struct
   type raw_t = bound_t * inequality_t
   type cindex_t = int
   type clock_constraint_t = cindex_t * cindex_t * raw_t
-  external get_infty : unit -> int = "stub_get_infty" "noalloc"
+  external get_infty : unit -> int = "stub_get_infty" [@@noalloc]
   let infty = get_infty()
 
   let string_of_raw = function
@@ -39,6 +39,9 @@ struct
     | DBM_STRICT -> DBM_WEAK
 
   let invert_raw (k,ineq) = (-k, invert_inequality ineq)
+
+  let negate_constraint (x,y,(b,ineq)) =
+    (y,x,invert_raw (b,ineq))
 
 end
 
